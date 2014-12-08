@@ -18,6 +18,14 @@ HEADERS += mainwindow.h \
 
 FORMS += mainwindow.ui
 
-LIBS += -L/course/cs123/lib/glew/glew-1.10.0/include -lGLEW
-INCLUDEPATH += /course/cs123/lib/glew/glew-1.10.0/include
-DEPENDPATH += /course/cs123/lib/glew/glew-1.10.0/include
+# Enabling dev on Mac
+win32:CONFIG(release, debug|release): LIBS += -L/course/cs123/lib/glew/glew-1.10.0/lib/release/ -lGLEW
+else:win32:CONFIG(debug, debug|release): LIBS += -L/course/cs123/lib/glew/glew-1.10.0/lib/debug/ -lGLEW
+else:unix: LIBS += -L/usr/local/Cellar/glew/1.11.0/lib/ -lGLEW
+
+# For Linux
+#INCLUDEPATH += /course/cs123/lib/glew/glew-1.10.0/include
+#DEPENDPATH += /course/cs123/lib/glew/glew-1.10.0/include
+
+INCLUDEPATH+=/usr/local/Cellar/glew/1.11.0/include
+DEPENDPATH+=/usr/local/Cellar/glew/1.11.0/include
