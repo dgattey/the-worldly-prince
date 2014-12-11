@@ -6,10 +6,12 @@
 #include "camera.h"
 #include <GL/glu.h>
 #include "cs123_lib/transforms.h"
-#include "shapes/sphere.h"
 #include "texquad.h"
 #include "particle.h"
-#include "shapes/cylinder.h"
+#include "cylinder.h"
+#include "flower.h"
+#include "sphere.h"
+
 
 #define NUM_LIGHTS 4
 
@@ -107,6 +109,7 @@ private:
     ParticleData *m_particleData;
 
     Cylinder *m_cylinder;
+    Flower *m_flower;
     QTimer m_timer;
     float m_fps;
     float m_increment;

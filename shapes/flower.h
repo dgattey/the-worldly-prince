@@ -8,12 +8,17 @@
 class Flower : public Shape
 {
 public:
-    Flower(GLuint shader);
+    // uninitialized flower
+    Flower();
+
+    // initialized flower
+    Flower(GLuint position, GLuint normal);
+
     ~Flower();
 
-    void init();
+    void init(GLuint position, GLuint normal);
 
-    void render();
+    void render(GLuint modelLoc, glm::mat4x4 overallTransform);
 
     bool needsUpdate();
 
@@ -21,7 +26,7 @@ private:
 
     GLfloat *m_vertexBufferData;
     GLuint m_vaoID;
-    GLuint m_shader;
+    bool m_isInitialized;
     int m_shapeCount;
     std::list<Shape *> m_shapes;
     glm::mat4x4 *m_transforms;

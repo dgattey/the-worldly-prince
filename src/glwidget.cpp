@@ -172,6 +172,7 @@ void GLWidget::createShaderPrograms()
     m_shaderPrograms[ "phong" ] = ResourceLoader::loadShaders( ":/shaders/phong.vert", ":/shaders/phong.frag" );
     m_sphere.init( glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ) );
     m_cylinder = new Cylinder(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
+    m_flower = new Flower(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
 
     m_shaderPrograms[ "lights" ] = ResourceLoader::loadShaders( ":/shaders/lights.vert",":/shaders/lights.frag" );
     m_shaderPrograms[ "brightpass" ] = ResourceLoader::loadShaders( ":/shaders/tex.vert", ":/shaders/brightpass.frag" );
@@ -335,7 +336,6 @@ void GLWidget::renderShapes()
 
     sphereTransform.model =  glm::translate( glm::vec3( x, y, z ) )  * glm::scale( glm::vec3( 1.5f, 1.5f, 1.5f) ) * sphereTransform.model;
 
-    // TODO - Step 1.3,1.4:
     //   - Set the necessary uniforms (can be found in phong.vert and phong.frag)
     glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_a"), m_k_a);
     glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_d"), m_k_d);
@@ -350,21 +350,10 @@ void GLWidget::renderShapes()
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-    m_sphere.render();
+    //m_sphere.render();
 
     sphereTransform = m_transform;
 
-    x = urand(-.75f, 0.75f);
-    z = sqrt((0.75f*0.75f) - (x*x)) - urand(0.0f,0.75f);
-    if (urand(0.0f,1.0f) > 0.5f)
-        z = z * -1;
-    y = sqrt((0.75f*0.75f) - (x*x) - (z*z));
-    if (urand(0.0f,1.0f) > 0.5f)
-        y = y * -1;
-    sphereTransform.model = glm::translate( glm::vec3( x, y, z ) ) * glm::rotate(45.0f, glm::vec3(x, y, z)) * glm::scale(glm::vec3(0.05f, 0.5f, 0.05f)) * sphereTransform.model;
-
-    // TODO - Step 1.3,1.4:
-    //   - Set the necessary uniforms (can be found in phong.vert and phong.frag)
     glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_a"), m_k_a);
     glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_d"), m_k_d);
 
@@ -376,9 +365,8 @@ void GLWidget::renderShapes()
     glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "lightPositions"), NUM_LIGHTS, glm::value_ptr(m_lightPositions[0]));
 
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-    m_cylinder->render();
+    m_flower->render(glGetUniformLocation(m_shaderPrograms["phong"], "m"), glm::mat4(1.f));
 
     // TODO - Step 1.1:
     //   - Unbind the "phong" shader program
