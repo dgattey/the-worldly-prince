@@ -50,12 +50,30 @@ void Flower::init(GLuint position, GLuint normal)
     //std::cout << glm::to_string(m_transforms[i - 1]) << std::endl;*/
 
     //printf("Added the stem at index %d\n", i);
-
+    /*float x = urand(-.75f, 0.75f);
+    float z = sqrt((0.75f*0.75f) - (x*x)) - urand(0.0f,0.75f);
+    if (urand(0.0f,1.0f) > 0.5f)
+        z = z * -1;
+    float y = sqrt((0.75f*0.75f) - (x*x) - (z*z));
+    if (urand(0.0f,1.0f) > 0.5f)
+        y = y * -1;
     m_shapes.push_back(new Sphere(position, normal));
-    m_transforms[i++] = glm::translate(glm::vec3(-2.f, 0.f, 0.f)) * glm::mat4(1.f);// * rotateMatrix(glm::vec3{0, 1, 0}, i * (2.f * M_PI / (float)petals));
+    m_transforms[i++] = glm::translate( glm::vec3( x, y, z ) ) * glm::rotate(45.0f, glm::vec3(x, y, z)) * glm::scale(glm::vec3(0.05f, 0.5f, 0.05f)) * glm::mat4(1.f);
+*/
+    float x = urand(-.75f, 0.75f);
+    float z = sqrt((0.75f*0.75f) - (x*x)) - urand(0.0f,0.75f);
+    if (urand(0.0f,1.0f) > 0.5f)
+        z = z * -1;
+    float y = sqrt((0.75f*0.75f) - (x*x) - (z*z));
+    if (urand(0.0f,1.0f) > 0.5f)
+        y = y * -1;
+    printf("x = %f, y = %f, z = %f\n", x, y, z);
+    m_shapes.push_back(new Cylinder(position, normal));
+    m_transforms[i++] = glm::translate(glm::vec3(x, y, z)) * glm::mat4(1.f);
+
     m_shapes.push_back(new Cylinder(position, normal));
     printf("setting %d\n", i);
-    m_transforms[i++] = glm::scale(glm::vec3(0.1f, 0.5f, 0.1f)) * glm::translate(glm::vec3(2.0f, 0.0f, 0.0f)) * glm::mat4(1.0f);
+    m_transforms[i++] = glm::mat4(1.f);//glm::translate( glm::vec3( x, y, z ) ) * glm::rotate(45.0f, glm::vec3(x, y, z)) * glm::scale(glm::vec3(0.05f, 0.5f, 0.05f)) * glm::mat4(1.f);
 
     std::cout << glm::to_string(m_transforms[i - 1]) << std::endl;
 }

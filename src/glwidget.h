@@ -9,13 +9,23 @@
 #include "texquad.h"
 #include "particle.h"
 #include "cylinder.h"
-#include "flower.h"
 #include "sphere.h"
 
 
 #define NUM_LIGHTS 4
 
 class QGLFramebufferObject;
+
+struct Flower {
+    Cylinder stem;
+    glm::mat4x4 cylModel;
+
+    int petalCount;
+    Sphere *petals;
+    glm::mat4x4 *petalModels;
+    glm::vec4 *petalColors;
+    //TODO: destructor
+};
 
 class GLWidget : public QGLWidget
 {
@@ -93,6 +103,8 @@ protected:
     void renderStarPass();
     void paintText();
 
+    void generateFlowers();
+
     GLuint loadTexture(const QString &path);
     void initializeParticles();
 
@@ -108,8 +120,7 @@ private:
     int m_numParticles;
     ParticleData *m_particleData;
 
-    Cylinder *m_cylinder;
-    Flower *m_flower;
+    std::list<Flower *> m_flowers;
     QTimer m_timer;
     float m_fps;
     float m_increment;

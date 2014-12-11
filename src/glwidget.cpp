@@ -171,8 +171,7 @@ void GLWidget::createShaderPrograms()
 {
     m_shaderPrograms[ "phong" ] = ResourceLoader::loadShaders( ":/shaders/phong.vert", ":/shaders/phong.frag" );
     m_sphere.init( glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ) );
-    m_cylinder = new Cylinder(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
-    m_flower = new Flower(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
+    generateFlowers();
 
     m_shaderPrograms[ "lights" ] = ResourceLoader::loadShaders( ":/shaders/lights.vert",":/shaders/lights.frag" );
     m_shaderPrograms[ "brightpass" ] = ResourceLoader::loadShaders( ":/shaders/tex.vert", ":/shaders/brightpass.frag" );
@@ -350,23 +349,48 @@ void GLWidget::renderShapes()
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-    //m_sphere.render();
+    m_sphere.render();
 
     sphereTransform = m_transform;
 
-    glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_a"), m_k_a);
-    glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_d"), m_k_d);
+    for (std::list<Flower *>::const_iterator iterator = m_flowers.begin(), end = m_flowers.end(); iterator != end; ++iterator) {
+        Flower *f = *iterator;
+        sphereTransform.model = f->cylModel;
 
-    glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "O_a"), 1, glm::value_ptr(m_O_a));
-    glUniform3f(glGetUniformLocation(m_shaderPrograms["phong"], "O_d"), m_O_d.x, m_O_d.y, m_O_d.z);
-    glUniform3f(glGetUniformLocation(m_shaderPrograms["phong"], "i_a"), m_i_a.x, m_i_a.y, m_i_a.z);
+        glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_a"), m_k_a);
+        glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_d"), m_k_d);
 
-    glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "lightIntensities"), NUM_LIGHTS, glm::value_ptr(m_lightIntensities[0]));
-    glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "lightPositions"), NUM_LIGHTS, glm::value_ptr(m_lightPositions[0]));
+        glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "O_a"), 1, glm::value_ptr(m_O_a));
+        glUniform3f(glGetUniformLocation(m_shaderPrograms["phong"], "O_d"), m_O_d.x, m_O_d.y, m_O_d.z);
+        glUniform3f(glGetUniformLocation(m_shaderPrograms["phong"], "i_a"), m_i_a.x, m_i_a.y, m_i_a.z);
 
-    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+        glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "lightIntensities"), NUM_LIGHTS, glm::value_ptr(m_lightIntensities[0]));
+        glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "lightPositions"), NUM_LIGHTS, glm::value_ptr(m_lightPositions[0]));
+        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-    m_flower->render(glGetUniformLocation(m_shaderPrograms["phong"], "m"), glm::mat4(1.f));
+        f->stem.render();
+
+        for (int i = 0; i < f->petalCount; i++) {
+
+            sphereTransform.model = f->petalModels[i];
+
+            glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_a"), m_k_a);
+            glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_d"), m_k_d);
+
+            glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "O_a"), 1, glm::value_ptr(m_O_a));
+            glUniform3f(glGetUniformLocation(m_shaderPrograms["phong"], "O_d"), m_O_d.x, m_O_d.y, m_O_d.z);
+            glUniform3f(glGetUniformLocation(m_shaderPrograms["phong"], "i_a"), 50, 50, 200);
+
+            glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "lightIntensities"), NUM_LIGHTS, glm::value_ptr(m_lightIntensities[0]));
+            glUniform3fv(glGetUniformLocation(m_shaderPrograms["phong"], "lightPositions"), NUM_LIGHTS, glm::value_ptr(m_lightPositions[0]));
+            glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+            glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
+
+            f->petals[i].render();
+        }
+    }
+
 
     // TODO - Step 1.1:
     //   - Unbind the "phong" shader program
@@ -563,6 +587,27 @@ void GLWidget::renderStarPass()
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
+void GLWidget::generateFlowers()
+{
+    int flowerCount = 8;
+    for (int i = 0; i < flowerCount; i++) {
+        Flower *f = new Flower();
+        glm::mat4x4 arbitraryRotation = glm::rotate((float)(rand() % 360), glm::vec3(((float) rand() / (RAND_MAX)), ((float) rand() / (RAND_MAX)), ((float) rand() / (RAND_MAX))));
+        f->stem.init(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
+        f->cylModel = arbitraryRotation * glm::translate( glm::vec3(0.0f, -1.f, 0.0f ) ) * glm::scale(glm::vec3(0.05f, 0.5f, 0.05f)) * glm::mat4(1.0f);
+        f->petalCount = rand() % 4 + 4;
+        f->petals = new Sphere[f->petalCount];
+        f->petalModels = new glm::mat4x4[f->petalCount];
+        f->petalColors = new glm::vec4[f->petalCount];
+        glm::mat4x4 petalTransform = glm::translate(glm::vec3(0.f, -1.25f, 0.0f)) ;
+
+        for (int j = 0; j < f->petalCount; j++) {
+            f->petals[j].init(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
+            f->petalModels[j] = arbitraryRotation * petalTransform * glm::rotate(glm::floor(360.f / (float)f->petalCount * j), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(0.05f, 0.01f, 0.4f)) * glm::mat4(1.f);
+        }
+        m_flowers.push_back(f);
+    }
+}
 
 ////////// HELPER CODE ///////////
 
