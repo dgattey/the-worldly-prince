@@ -2,32 +2,35 @@
 #define CYLINDER_H
 
 #include "GL/glew.h"
-//#include "scenegraph/OpenGLScene.h"
 #include "shape.h"
 
 class Cylinder : public Shape
 {
 public:
-    //Uninitialized Cylinder
+    // uninitialized cylinder
     Cylinder();
 
-    //Initialized Cylinder
-    Cylinder(const int paramOne, const int paramTwo, const int paramThree, const GLuint vertexLocation, const GLuint normalLocation);
+    // initialized cylinder
+    Cylinder(const GLuint position, const GLuint normal);
 
-    virtual ~Cylinder();
+    ~Cylinder();
 
-    // Initialize Cylinder: Tessellate triangles for caps and side
-    virtual void init(const GLuint vertexLocation, const GLuint normalLocation);
+    void init(const GLuint position, const GLuint normal);
 
-    static float intersect(glm::vec3 eye, glm::vec3 dir);
-    static glm::vec3 normal(glm::vec3 eye, glm::vec3 dir, float t);
-    static glm::vec2 textureCoordinates(glm::vec3 eye, glm::vec3 dir, float t);
+    void render();
+
+    bool needsUpdate();
 
 private:
-    // Tessellation parameters
-    int m_numSlices; // paramTwo
-    int m_numCuts; // paramOne
-};
 
+    GLfloat *m_vertexBufferData;
+    GLuint m_vaoID;
+    bool m_isInitialized;
+    int m_p1 = 6;
+    int m_p2 = 6;
+
+    void addVertexNormal(glm::vec3 vertex, glm::vec3 normal, int
+            *startIndex);
+};
 
 #endif // CYLINDER_H

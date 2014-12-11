@@ -1,206 +1,227 @@
 #include "cylinder.h"
 #include <iostream>
-//#include "lib/CS123Common.h"
-//#include "scenegraph/OpenGLScene.h"
-//#include "ui/Settings.h"
-#include "shape.h"
-
-#include <math.h>
 
 Cylinder::Cylinder()
 {
     m_isInitialized = false;
 }
 
-Cylinder::Cylinder(const int paramOne, const int paramTwo, const int paramThree, const GLuint vertexLocation, const GLuint normalLocation) :
-    Shape(1, paramOne, paramTwo, paramThree, vertexLocation, normalLocation)
+Cylinder::Cylinder(const GLuint position, const GLuint normal)
 {
-    m_numCuts = paramOne;
-    m_numSlices = paramTwo;
-    m_numVertices = ((2*m_numCuts+2*(2*m_numCuts - 1))*m_numSlices)*3;//12*m_numSlices;
-    init(vertexLocation, normalLocation);
+    init(position, normal);
 }
 
 Cylinder::~Cylinder()
 {
-    glDeleteVertexArrays(1, &m_vaoID);
-    glDeleteBuffers(1, &m_vbo);
+    free(m_vertexBufferData);
 }
 
-// RAY INTERSECTION
-// Calculate the t-parameter for the intersection between a ray and a shape
-float Cylinder::intersect(glm::vec3 eye, glm::vec3 dir) {
-    float minT = -1;
-
-    float a = dir.x*dir.x + dir.z*dir.z;
-    float b = 2.0*eye.x*dir.x + 2.0*eye.z*dir.z;
-    float c = eye.x*eye.x + eye.z*eye.z - 0.25;
-
-    // Check for intersection with cylinder body (quadratic formula Part 1)
-    float t1 = (-b + sqrt(b*b - 4*a*c)) / (2*a);
-    glm::vec3 p1 = eye + t1*dir;
-    if (p1.y > -0.5 && p1.y < 0.5 && (t1 < minT || minT < 0)) {
-        minT = t1;
-    }
-    // Check for intersection with cylinder body (quadratic formula Part 2)
-    float t2 = (-b - sqrt(b*b - 4*a*c)) / (2*a);
-    glm::vec3 p2 = eye + t2*dir;
-    if (p2.y > -0.5 && p2.y < 0.5 && (t2 < minT || minT < 0)){
-        minT = t2;
-    }
-    // Check for intersection with cylinder's top cap
-    float t3 = (0.5 - eye.y) / dir.y;
-    glm::vec3 p3 = eye + t3*dir;
-    if ((p3.x*p3.x + p3.z*p3.z <= 0.25) && (t3 < minT || minT < 0)) {
-        minT = t3;
-    }
-    // Check for intersection with cylinder's bottom cap
-    float t4 = (-0.5 - eye.y) / dir.y;
-    glm::vec3 p4 = eye + t4*dir;
-    if ((p4.x*p4.x + p4.z*p4.z <= 0.25) && (t4 < minT || minT < 0)) {
-        minT = t4;
-    }
-
-    return minT;
-}
-
-// Calculate the normal vector at parametrically defined intersection point
-glm::vec3 Cylinder::normal(glm::vec3 eye, glm::vec3 dir, float t) {
-
-    // Check to see if the intersection point is on the top plane...
-    float t3 = (0.5 - eye.y) / dir.y;
-    if(t == t3)
-        return glm::vec3(0.0f, 1.0f, 0.0f);
-    // ...or on the bottom plane
-    float t4 = (-0.5 - eye.y) / dir.y;
-    if(t == t4)
-        return glm::vec3(0.0f, -1.0f, 0.0f);
-
-    // Otherwise, return the cylinder body's normal
-    glm::vec3 p = eye + dir*t;
-    return glm::normalize(glm::vec3(2.0f*p.x, 0.0f, 2.0f*p.z));
-
-}
-
-// Calculate the texture coordinates for a given intersection point
-glm::vec2 Cylinder::textureCoordinates(glm::vec3 eye, glm::vec3 dir, float t) {
-    glm::vec3 p = eye + dir*t;
-    // Check to see if the intersection point is on the top plane...
-    float t3 = (0.5 - eye.y) / dir.y;
-    if(t == t3)
-        return glm::vec2(p.x + 0.5f, p.z + 0.5f);
-    // ...or on the bottom plane
-    float t4 = (-0.5 - eye.y) / dir.y;
-    if(t == t4)
-        return glm::vec2(p.x + 0.5f, 0.5f - p.z);
-
-    float theta = std::atan2(p.z, p.x);
-    float u, v;
-    v = 0.5 - p.y;
-    if (theta < 0) {
-        u = -theta / (2*M_PI);
-    } else {
-        u = 1 - (theta / (2*M_PI));
-    }
-    return glm::vec2(u,v);
-}
-
-void Cylinder::init(const GLuint vertexLocation, const GLuint normalLocation){
-    // Initializations
+void Cylinder::init(const GLuint vertexLocation, const GLuint normalLocation)
+{
     m_isInitialized = true;
-    m_vertexBufferData = new glm::vec3[(m_numVertices)*2];
+    // The current index into the buffer data array
+    int i = 0;
 
-    // Calculate incrementations of theta
-    float dTheta = 2.0f*M_PI / m_numSlices;
-    float theta1 = 0;
-    float theta2;
+    // The amount each slice rotates by
+    double step = (2.0 * M_PI) / m_p2;
 
-    int vps = (m_numVertices / m_numSlices) *2; // vectors per slice
-    int vpcps = 12;                     // vectors per cut per slice
+    // The size of the vertex buffer data array
+    int size = 6 * 3 * m_p2 * (6 * m_p1 - 2);
+    m_vertexBufferData = (GLfloat *)malloc(sizeof(GLfloat) * size);
 
-    // Tessellate each slice of the cylinder
-    for (int slice=0; slice<m_numSlices; slice++) {
-        theta2 = theta1 + dTheta;
-        int cut_ID = 0;
+    // For each of the m_p2 slices
+    for (int slice = 0; slice < m_p2; slice++) {
+        float oldX = 0.5 * cos((slice - 1) * step);
+        float oldZ = 0.5 * sin((slice - 1) * step);
+        float newX = 0.5 * cos(slice * step);
+        float newZ = 0.5 * sin(slice * step);
 
-        float dR = 0.5f / m_numCuts;
-        float radius1 = 0;
-        float radius2 = dR;
+        // First we do the side
+        // We can use the same len since they're both a radius away from the center.
+        glm::vec3 oldNormal = glm::vec3(oldX, 0, oldZ);
+        glm::vec3 newNormal = glm::vec3(newX, 0, newZ);
+        for (int row = 0; row < m_p1; row++) {
+            // Lower left
+            glm::vec3 point1 = glm::vec3(
+                    newX,
+                    -0.5 + row * (1.f / m_p1),
+                    newZ);
 
-        //Build the bottom and top circle caps, starting with the interior triangle fan
-        glm::vec3 p0 = glm::vec3(0.0f, -0.5f, 0.0f);
-        glm::vec3 p1 = glm::vec3(radius2*cos(theta1), -0.5f, radius2*sin(theta1));
-        glm::vec3 p2 = glm::vec3(radius2*cos(theta2), -0.5f, radius2*sin(theta2));
-        m_vertexBufferData[slice*vps+cut_ID*vpcps] = p0;
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+1] = glm::vec3(0.0f, -1.0f, 0.0f);
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+2] = p1;
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+3] = glm::vec3(0.0f, -1.0f, 0.0f);
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+4] = p2;
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+5] = glm::vec3(0.0f, -1.0f, 0.0f);
+            // Upper right
+            glm::vec3 point2 = glm::vec3(
+                    oldX,
+                    -0.5 + (row + 1) * (1.f / m_p1),
+                    oldZ);
 
-        p0 = glm::vec3(0.0f, 0.5f, 0.0f);
-        p1 = glm::vec3(radius2*cos(theta1), 0.5f, radius2*sin(theta1));
-        p2 = glm::vec3(radius2*cos(theta2), 0.5f, radius2*sin(theta2));
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+6] = p0;
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+7] = glm::vec3(0.0f, 1.0f, 0.0f);
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+8] = p2;
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+9] = glm::vec3(0.0f, 1.0f, 0.0f);
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+10] = p1;
-        m_vertexBufferData[slice*vps+cut_ID*vpcps+11] = glm::vec3(0.0f, 1.0f, 0.0f);
+            // Upper left
+            glm::vec3 point3 = glm::vec3(
+                    newX,
+                    -0.5 + (row + 1) * (1.f / m_p1),
+                    newZ);
 
-        cut_ID++;
-        radius1 = radius2;
-        // Finish building the bottom cap with quadrilaterals
-        for (int cut=0; cut<m_numCuts-1; cut++) {
-                radius2 = radius1 + dR;
-                glm::vec3 v1 = glm::vec3(radius1*cos(theta2), -0.5f, radius1*sin(theta2));
-                glm::vec3 v2 = glm::vec3(radius1*cos(theta1), -0.5f, radius1*sin(theta1));
-                glm::vec3 v3 = glm::vec3(radius2*cos(theta1), -0.5f, radius2*sin(theta1));
-                glm::vec3 v4 = glm::vec3(radius2*cos(theta2), -0.5f, radius2*sin(theta2));
-                glm::vec3 norm = glm::vec3(0.0f, -1.0f, 0.0f);
-                quadTessellate(v1, norm, v2, norm, v3, norm, v4, norm, slice*vps+cut_ID*vpcps);
+            // Lower right
+            glm::vec3 point5 = glm::vec3(
+                    oldX,
+                    -0.5 + row * (1.f / m_p1),
+                    oldZ);
 
-                radius1 = radius2;
-                cut_ID++;
-        }
-        // Finish building the top cap with quadrilaterals
-        radius1 = dR;
-        for (int cut=0; cut<m_numCuts-1; cut++) {
-                radius2 = radius1 + dR;
-                glm::vec3 v1 = glm::vec3(radius1*cos(theta2), 0.5f, radius1*sin(theta2));
-                glm::vec3 v2 = glm::vec3(radius1*cos(theta1), 0.5f, radius1*sin(theta1));
-                glm::vec3 v3 = glm::vec3(radius2*cos(theta1), 0.5f, radius2*sin(theta1));
-                glm::vec3 v4 = glm::vec3(radius2*cos(theta2), 0.5f, radius2*sin(theta2));
-                glm::vec3 norm = glm::vec3(0.0f, 1.0f, 0.0f);
-                quadTessellate(v4, norm, v3, norm, v2, norm, v1, norm, slice*vps+cut_ID*vpcps);
-
-                radius1 = radius2;
-                cut_ID++;
+            addVertexNormal(point1, newNormal, &i);
+            addVertexNormal(point2, oldNormal, &i);
+            addVertexNormal(point3, newNormal, &i);
+            addVertexNormal(point1, newNormal, &i);
+            addVertexNormal(point5, oldNormal, &i);
+            addVertexNormal(point2, oldNormal, &i);
         }
 
-        // Build the sides entirely out of quadrilaterals
-        float h1 = -0.5f;
-        float h2;
-        float dHeight = 1.0f / m_numCuts;
-        for (int cut=0; cut<m_numCuts; cut++) {
-            h2 = h1 + dHeight;
-            glm::vec3 v1 = glm::vec3(0.5f*cos(theta2), h1, 0.5f*sin(theta2));
-            glm::vec3 v2 = glm::vec3(0.5f*cos(theta1), h1, 0.5f*sin(theta1));
-            glm::vec3 v3 = glm::vec3(0.5f*cos(theta1), h2, 0.5f*sin(theta1));
-            glm::vec3 v4 = glm::vec3(0.5f*cos(theta2), h2, 0.5f*sin(theta2));
-            glm::vec3 n1 = glm::vec3(cos(theta1), 0.0f, sin(theta1));
-            glm::vec3 n2 = glm::vec3(cos(theta2), 0.0f, sin(theta2));
-            quadTessellate(v1, n2, v2, n1, v3, n1, v4, n2, slice*vps+cut_ID*vpcps);
+        // Now we'll do the top
+        glm::vec3 normal = glm::vec3(0, 1, 0);
+        for (int row = 0; row < m_p1; row++) {
+            // Lower left
+            glm::vec3 point1 = glm::vec3(
+                    newX * (1 - (float)row / m_p1),
+                    0.5,
+                    newZ * (1 - (float)row / m_p1));
 
-            h1 = h2;
-            cut_ID++;
+            // Upper right
+            glm::vec3 point2 = glm::vec3(
+                    oldX * (1 - (float)(row + 1) / m_p1),
+                    0.5,
+                    oldZ * (1 - (float)(row + 1) / m_p1));
+
+            // Upper left
+            glm::vec3 point3 = glm::vec3(
+                    newX * (1 - (float)(row + 1) / m_p1),
+                    0.5,
+                    newZ * (1 - (float)(row + 1) / m_p1));
+
+            // Lower right
+            glm::vec3 point5 = glm::vec3(
+                    oldX * (1 - (float)row / m_p1),
+                    0.5,
+                    oldZ * (1 - (float)row / m_p1));
+
+            // And now the tip (special case the inner triangle)
+            if (row == (m_p1 - 1)) {
+                addVertexNormal(point1, normal, &i);
+                addVertexNormal(point5, normal, &i);
+                addVertexNormal(point2, normal, &i);
+                break;
+            }
+
+            // point4 = point1, point6 = point2
+            addVertexNormal(point1, normal, &i);
+            addVertexNormal(point2, normal, &i);
+            addVertexNormal(point3, normal, &i);
+            addVertexNormal(point1, normal, &i);
+            addVertexNormal(point5, normal, &i);
+            addVertexNormal(point2, normal, &i);
         }
-        theta1 = theta2;
+
+        // Now we'll do the bottom
+        normal = glm::vec3(0, -1, 0);
+        for (int row = 0; row < m_p1; row++) {
+            // Lower left
+            glm::vec3 point1 = glm::vec3(
+                    oldX * (1 - (float)row / m_p1),
+                    -0.5,
+                    oldZ * (1 - (float)row / m_p1));
+
+            // Upper right
+            glm::vec3 point2 = glm::vec3(
+                    newX * (1 - (float)(row + 1) / m_p1),
+                    -0.5,
+                    newZ * (1 - (float)(row + 1) / m_p1));
+
+            // Upper left
+            glm::vec3 point3 = glm::vec3(
+                    oldX * (1 - (float)(row + 1) / m_p1),
+                    -0.5,
+                    oldZ * (1 - (float)(row + 1) / m_p1));
+
+            // Lower right
+            glm::vec3 point5 = glm::vec3(
+                    newX * (1 - (float)row / m_p1),
+                    -0.5,
+                    newZ * (1 - (float)row / m_p1));
+
+            // And now the tip (special case the inner triangle)
+            if (row == (m_p1 - 1)) {
+                addVertexNormal(point1, normal, &i);
+                addVertexNormal(point5, normal, &i);
+                addVertexNormal(point2, normal, &i);
+                break;
+            }
+
+            addVertexNormal(point1, normal, &i);
+            addVertexNormal(point2, normal, &i);
+            addVertexNormal(point3, normal, &i);
+            addVertexNormal(point1, normal, &i);
+            addVertexNormal(point5, normal, &i);
+            addVertexNormal(point2, normal, &i);
+        }
+
     }
 
-    // Bind buffer data
-    bindData(vertexLocation, normalLocation);
+    // Step 2: initialize and bind a Vertex Array Object -- see glGenVertexArrays and glBindVertexArray
+    glGenVertexArrays(1, &m_vaoID);	//	Create	1	VAO
+    glBindVertexArray(m_vaoID);
 
+    // Step 3: initialize and bind a buffer for your vertex data -- see glGenBuffers and glBindBuffer
+    GLuint vboID;
+    glGenBuffers(1, &vboID);
+    glBindBuffer(GL_ARRAY_BUFFER, vboID);
+
+    // Step 4: Send your vertex data to the GPU -- see glBufferData
+    glBufferData(GL_ARRAY_BUFFER, size * sizeof(GLfloat), m_vertexBufferData, GL_STATIC_DRAW);
+
+    // Step 5: Expose the vertices to other OpenGL components (namely, shaders)
+    //         -- see glEnableVertexAttribArray and glVertexAttribPointer
+    glEnableVertexAttribArray(vertexLocation);
+    glEnableVertexAttribArray(normalLocation);
+    glVertexAttribPointer(
+        vertexLocation,
+        3,                   // Num coordinates per position
+        GL_FLOAT,            // Type
+        GL_FALSE,            // Normalized
+        sizeof(GLfloat) * 6, // Stride
+        (void*) 0            // Array buffer offset
+    );
+    glVertexAttribPointer(
+        normalLocation,
+        3,           // Num coordinates per normal
+        GL_FLOAT,    // Type
+        GL_TRUE,     // Normalized
+        sizeof(GLfloat) * 6,           // Stride
+        (void*) (sizeof(GLfloat) * 3)    // Array buffer offset
+   );
+    // Step 6: Clean up -- unbind the buffer and vertex array.
+    //         It is a good habit to leave the state of OpenGL the way you found it
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
+void Cylinder::render()
+{
+    if (m_isInitialized) {
+        glBindVertexArray(m_vaoID);
+        int size = 6 * 3 * m_p2 * (6 * m_p1 - 2);
+        glDrawArrays(GL_TRIANGLES, 0, size);
+        glBindVertexArray(0);
+    } else {
+        printf("Must initialized cylinder before rendering!\n");
+    }
+}
 
+void Cylinder::addVertexNormal(glm::vec3 vertex, glm::vec3 normal, int *startIndex)
+{
+    m_vertexBufferData[(*startIndex)++] = vertex.x;  //X
+    m_vertexBufferData[(*startIndex)++] = vertex.y;  //Y
+    m_vertexBufferData[(*startIndex)++] = vertex.z;  //Z
+
+    // Make sure this is a normal vector
+    normal = glm::normalize(normal);
+
+    m_vertexBufferData[(*startIndex)++] = normal.x;  //X Normal
+    m_vertexBufferData[(*startIndex)++] = normal.y;  //Y Normal
+    m_vertexBufferData[(*startIndex)++] = normal.z;  //Z Normal
+}

@@ -6,10 +6,10 @@
 #include "camera.h"
 #include <GL/glu.h>
 #include "cs123_lib/transforms.h"
-#include "sphere.h"
+#include "shapes/sphere.h"
 #include "texquad.h"
 #include "particle.h"
-#include "shapes/Cylinder.h"
+#include "shapes/cylinder.h"
 
 #define NUM_LIGHTS 4
 

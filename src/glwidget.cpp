@@ -171,8 +171,7 @@ void GLWidget::createShaderPrograms()
 {
     m_shaderPrograms[ "phong" ] = ResourceLoader::loadShaders( ":/shaders/phong.vert", ":/shaders/phong.frag" );
     m_sphere.init( glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ) );
-    m_cylinder = new Cylinder(50,50,50,glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ),
-            glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
+    m_cylinder = new Cylinder(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
 
     m_shaderPrograms[ "lights" ] = ResourceLoader::loadShaders( ":/shaders/lights.vert",":/shaders/lights.frag" );
     m_shaderPrograms[ "brightpass" ] = ResourceLoader::loadShaders( ":/shaders/tex.vert", ":/shaders/brightpass.frag" );
@@ -351,7 +350,7 @@ void GLWidget::renderShapes()
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-    m_sphere.draw();
+    m_sphere.render();
 
     sphereTransform = m_transform;
 
@@ -379,7 +378,7 @@ void GLWidget::renderShapes()
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["phong"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-    m_cylinder->draw();
+    m_cylinder->render();
 
     // TODO - Step 1.1:
     //   - Unbind the "phong" shader program
@@ -594,7 +593,7 @@ void GLWidget::renderLights()
                 * sphereTransform.model;
         glUniform3f( glGetUniformLocation( m_shaderPrograms[ "lights" ], "color" ), 1.0f, 1.0f, 1.0f );
         glUniformMatrix4fv( glGetUniformLocation( m_shaderPrograms[ "lights" ], "mvp" ), 1, GL_FALSE, &sphereTransform.getTransform()[ 0 ][ 0 ] );
-        m_sphere.draw();
+        m_sphere.render();
     }
     glUseProgram( 0 );
 }
