@@ -12,8 +12,8 @@ SOURCES += src/settings.cpp \
     src/mainwindow.cpp \
     src/main.cpp \
     src/glwidget.cpp \
-   cs123_lib/transforms.cpp \
-   cs123_lib/resourceloader.cpp \
+    cs123_lib/transforms.cpp \
+    cs123_lib/resourceloader.cpp \
     sphere.cpp \
     src/camera.cpp \
     texquad.cpp \
