@@ -5,8 +5,8 @@ TEMPLATE = app
 
 unix:!macx: LIBS += -lGLU
 
-INCLUDEPATH += src glm cs123_lib
-DEPENDPATH += src glm cs123_lib
+INCLUDEPATH += src glm cs123_lib shapes
+DEPENDPATH += src glm cs123_lib shapes
 
 SOURCES += src/settings.cpp \
     src/mainwindow.cpp \
@@ -14,14 +14,13 @@ SOURCES += src/settings.cpp \
     src/glwidget.cpp \
     cs123_lib/transforms.cpp \
     cs123_lib/resourceloader.cpp \
-    sphere.cpp \
     src/camera.cpp \
     texquad.cpp \
     particleemitter.cpp \
     particle.cpp \
-    cylinder.cpp \
-    shape.cpp
-
+    shapes/shape.cpp \
+    shapes/sphere.cpp \
+    shapes/cylinder.cpp
 
 HEADERS += \
     src/settings.h \
@@ -30,13 +29,13 @@ HEADERS += \
     src/camera.h \
     cs123_lib/transforms.h \
     cs123_lib/resourceloader.h \
-    sphere.h \
     src/newmath.h \
     texquad.h \
     particleemitter.h \
     particle.h \
-    cylinder.h \
-    shape.h
+    shapes/shape.h \
+    shapes/sphere.h \
+    shapes/cylinder.h
 
 FORMS += src/mainwindow.ui
 
