@@ -112,20 +112,35 @@ void GLWidget::initializeGL()
 }
 
 void GLWidget::initializeParticles() {
-    m_numParticles = 2000;
+    m_numParticles = 4000;
     m_particleData = new ParticleData[m_numParticles];
     for (int i = 0; i<m_numParticles; i++) {
-        float x = urand(-400.0f, 400.0f);
-        float y = urand(-400.0f, 400.0f);
-        float z = urand(-400.0f, 400.0f);
-        m_particleData[i].life = urand(0.0f, 200.0f);//100.0f;
+//        float theta = urand(0.0f, 2*M_PI);
+//        float phi = urand(0.0f, M_PI);
+//        float radius = urand(100.0f, 400.0f);
+//        float x = radius * sin(phi) * cos(theta);//urand(-400.0f, 400.0f);
+//        float y = radius * sin(phi) * sin(theta);//urand(-400.0f, 400.0f);
+//        float z = radius * cos(phi); //urand(-400.0f, 400.0f);
+        float x,y,z;
+        float radius = 0.0f;
+        while (radius < 100.0f) {
+            x = urand(-300.0f, 300.0f);
+            y = urand(-300.0f, 300.0f);
+            z = urand(-300.0f, 300.0f);
+            radius = sqrt(pow(x,2.0f) + pow(y,2.0f) + pow(z,2.0f));
+        }
+//        float radius = urand(50.0f,100.0f);
+//        float z = sqrt(pow(radius,2) - pow(x,2) - pow(y,2));
+//        if (urand(0.0f,1.0f) > 0.5f)
+//            z = z * -1.0f;
+        m_particleData[i].life = urand(0.0f, 150.0f);//100.0f;
         m_particleData[i].dir = glm::vec3(0.0f,0.0f,0.0f);
         m_particleData[i].pos = glm::vec3(x,y,z);
-        m_particleData[i].color = glm::vec3(0.8f, 0.6f, 0.8f);
+        m_particleData[i].color = glm::vec3(0.9f, 0.7f, 0.8f);
         m_particleData[i].decay = -1.0f;
         if (urand(0.0f,1.0f) > 0.5f)
             m_particleData[i].decay = 1.0f;
-        if (urand(0.0f,1.0f) > 0.87f) { // SHOOTING STAR!
+        if (urand(0.0f,1.0f) > 0.95f) { // SHOOTING STAR!
             m_particleData[i].color = glm::vec3(0.8f, 0.5f, 0.4f);
             m_particleData[i].dir = glm::vec3(urand(-2.0f, 2.0f),urand(-2.0f, 2.0f),urand(-2.0f, 2.0f));
         }
@@ -269,16 +284,16 @@ void GLWidget::paintGL()
         m_lastUpdate = time;
     }
 
-    renderStarPass();
+//    renderStarPass();
 
     // Draw scene
     renderGeometryPass();
 
     // Process brightpass
-    renderBrightPass();
+//    renderBrightPass();
 
     // Process blur
-    renderBlur( width(), height() );
+//    renderBlur( width(), height() );
 
     // Process final pass
     renderFinalPass();
@@ -389,29 +404,54 @@ void GLWidget::renderStars() {
 
         glm::vec3 n = glm::vec3(0.0f,0.0f,1.0f);
         glm::vec3 np = glm::normalize(glm::vec3(-x1,-y1,-z1));
-        glm::vec3 axis = glm::cross(n, np);
-        float angle = glm::acos(glm::dot(n, np) / (glm::length(glm::vec4(n,0.0f)) * glm::length(glm::vec4(np,0.0f))));
 
-        particleTransform.model = glm::translate(glm::vec3(x1,y1,z1)) * glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
-                glm::rotate(angle*360.0f/6.28f, axis) * particleTransform.model;
+        glm::vec3 view = glm::normalize(m_camera.eye);
+        if (glm::dot(view, np) > 0) { // Backface Culling!!!!!!
 
-        float pulse = 1.0f;// cos((int)m_particleData[i].life % 6);
+            glm::vec3 axis = glm::cross(n, np);
+            float angle = glm::acos(glm::dot(n, np) / (glm::length(glm::vec4(n,0.0f)) * glm::length(glm::vec4(np,0.0f))));
 
-        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "mvp"), 1, GL_FALSE, &particleTransform.getTransform()[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "m"), 1, GL_FALSE, &particleTransform.model[0][0]);
-        glUniform4f(glGetUniformLocation(m_shaderPrograms["star"], "color"),
-                pulse*m_particleData[i].color.x, pulse*m_particleData[i].color.y, pulse*m_particleData[i].color.z, m_particleData[i].life / 200.0f);
+            particleTransform.model = glm::translate(glm::vec3(x1,y1,z1)) * glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
+                    glm::rotate(angle*360.0f/6.28f, axis) * particleTransform.model;
 
-        m_particle.draw();
+            float pulse = 1.0f;// cos((int)m_particleData[i].life % 6);
+
+            glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "mvp"), 1, GL_FALSE, &particleTransform.getTransform()[0][0]);
+            glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "m"), 1, GL_FALSE, &particleTransform.model[0][0]);
+            glUniform4f(glGetUniformLocation(m_shaderPrograms["star"], "color"),
+                    pulse*m_particleData[i].color.x, pulse*m_particleData[i].color.y, pulse*m_particleData[i].color.z, m_particleData[i].life / 150.0f);
+
+            m_particle.draw();
+
+            // Give shooting stars their tail
+            if (glm::length(glm::vec4(m_particleData[i].dir,0.0f)) > 0) {
+                for (int dt = 0; dt <= 8; dt++) {
+//                    for (int p = 0; p < 1; p++) {
+                        float coeff = 0.5f;
+                        glm::vec3 newPos = glm::vec3(m_particleData[i].pos.x - coeff*dt*m_particleData[i].dir.x /*- urand(-2.5f,2.5f)*/,
+                                                     m_particleData[i].pos.y - coeff*dt*m_particleData[i].dir.y /*- urand(-2.5f,2.5f)*/,
+                                                     m_particleData[i].pos.z - coeff*dt*m_particleData[i].dir.z /*- urand(-2.5f,2.5f)*/);
+                        Transforms temp = m_transform;
+                        temp.model = glm::translate(newPos) * glm::rotate(angle*360.0f/6.28f, axis) * glm::scale(glm::vec3(1.0f + 1.0f/((float)dt))) * temp.model;
+                        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "mvp"), 1, GL_FALSE, &temp.getTransform()[0][0]);
+                        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "m"), 1, GL_FALSE, &temp.model[0][0]);
+                        glUniform4f(glGetUniformLocation(m_shaderPrograms["star"], "color"),
+                                (1.0f/((float)dt))*m_particleData[i].color.x, (1.0f/((float)dt))*m_particleData[i].color.y, (1.0f/((float)dt))*m_particleData[i].color.z, m_particleData[i].life / 150.0f);
+                        m_particle.draw();
+//                    }
+                }
+            }
+        }
+
         m_particleData[i].pos = m_particleData[i].pos + m_particleData[i].dir;
         m_particleData[i].life += 1.0f*m_particleData[i].decay;
 
-        if (m_particleData[i].life <= 0 || m_particleData[i].life >= 200) {
+        if (m_particleData[i].life <= 0 || m_particleData[i].life >= 150) {
             m_particleData[i].decay *= -1.0f;
-            if (glm::length(glm::vec4(m_particleData[i].dir,0.0f)) > 0) {
-                m_particleData[i].pos.x = urand(-400.0f, 400.0f);
-                m_particleData[i].pos.y = urand(-400.0f, 400.0f);
-                m_particleData[i].pos.z = urand(-400.0f, 400.0f);
+            if (glm::length(glm::vec4(m_particleData[i].dir,0.0f)) > 0 && m_particleData[i].life <= 0) {
+                m_particleData[i].pos.x = urand(-200.0f, 200.0f);
+                m_particleData[i].pos.y = urand(-200.0f, 200.0f);
+                m_particleData[i].pos.z = urand(-200.0f, 200.0f);
             }
         }
     }
@@ -533,7 +573,20 @@ void GLWidget::renderGeometryPass()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    // Rebind your vertex array and draw the triangles
+
     renderStars();
+
+//    glAccum(GL_MULT,0.5);
+//    glAccum(GL_ACCUM,1);
+//    glAccum(GL_RETURN,1);
+
+    glDisable(GL_BLEND);
+
+//    renderStars();
     renderShapes();
 //    renderLights();
 
