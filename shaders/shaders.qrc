@@ -6,5 +6,7 @@
         <file>tex.frag</file>
         <file>star.frag</file>
         <file>star.vert</file>
+        <file>noise.frag</file>
+        <file>noise.vert</file>
     </qresource>
 </RCC>

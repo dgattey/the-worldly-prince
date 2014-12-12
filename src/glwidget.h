@@ -81,13 +81,14 @@ protected:
     void keyPressEvent(QKeyEvent *event);
 
     void renderStars();
-    void renderShapes();
+    void renderFlowers();
+    void renderPlanet();
     void renderTexturedQuad();
     void generateFlowers();
     void initializeParticles();
 
     void renderFinalPass();
-    void renderGeometryPass();
+    void renderFlowerPass();
     void renderPlanetPass();
     void renderStarPass();
 
@@ -129,9 +130,11 @@ private:
     glm::vec3 m_O_d;
     glm::vec3 m_i_a;
 
-    GLuint m_shapeFBO;
-    GLuint m_shapeColorAttachment;
-    GLuint m_shapeDepthAttachment;
+    GLuint m_flowerFBO;
+    GLuint m_flowerColorAttachment;
+
+    GLuint m_planetFBO;
+    GLuint m_planetColorAttachment;
 
     GLuint m_starFBO;
     GLuint m_starColorAttachment;

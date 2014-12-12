@@ -21,46 +21,46 @@
 #include <QGLFramebufferObject>
 #include <glm/gtx/rotate_vector.hpp>
 
-GLWidget::GLWidget( QWidget *parent )
-    : QGLWidget( parent ), m_timer( this ), m_fps( 60.0f ), m_increment( 0 ),
-      m_font( "Deja Vu Sans Mono", 12, 4 )
+GLWidget::GLWidget(QWidget *parent)
+    : QGLWidget(parent), m_timer(this), m_fps(60.0f), m_increment(0),
+      m_font("Deja Vu Sans Mono", 12, 4)
 {
 
-    setFocusPolicy( Qt::StrongFocus );
-    setMouseTracking( true );
+    setFocusPolicy(Qt::StrongFocus);
+    setMouseTracking(true);
 
     // set up camera
-    m_camera.center = glm::vec3( 0.f, 0.f, 0.f );
-    m_camera.up = glm::vec3( 0.f, 1.f, 0.f );
+    m_camera.center = glm::vec3(0.f, 0.f, 0.f);
+    m_camera.up = glm::vec3(0.f, 1.f, 0.f);
     m_camera.zoom = 3.5f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
 
     // Set up 60 FPS draw loop
-    connect( &m_timer, SIGNAL( timeout() ), this, SLOT(tick() ) );
+    connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
 
     // Start the timer for updating the screen
-    m_timer.start( 1000.0f / m_fps );
+    m_timer.start(1000.0f / m_fps);
 
     // set up light positions and intensities
-    m_lightPositions[ 0 ] = glm::vec3( 0.f, 0.f,  0.f );
-    m_lightPositions[ 1 ] = glm::vec3( 0.f, 0.f, -2.f );
-    m_lightPositions[ 2 ] = glm::vec3( 0.f, 0.f,  2.f );
-    m_lightPositions[ 3 ] = glm::vec3( 1.f, 1.f,  1.f );
+    m_lightPositions[0] = glm::vec3(0.f, 0.f,  0.f);
+    m_lightPositions[1] = glm::vec3(0.f, 0.f, -2.f);
+    m_lightPositions[2] = glm::vec3(0.f, 0.f,  2.f);
+    m_lightPositions[3] = glm::vec3(1.f, 1.f,  1.f);
 
-    m_lightIntensities[ 0 ] = glm::vec3( 1.f, 0.f, 0.f );
-    m_lightIntensities[ 1 ] = glm::vec3( 0.f, 1.f, 0.f );
-    m_lightIntensities[ 2 ] = glm::vec3( 0.f, 0.f, 1.f );
-    m_lightIntensities[ 3 ] = glm::vec3( 0.5, 0.5, 0.5 );
+    m_lightIntensities[0] = glm::vec3(1.f, 0.f, 0.f);
+    m_lightIntensities[1] = glm::vec3(0.f, 1.f, 0.f);
+    m_lightIntensities[2] = glm::vec3(0.f, 0.f, 1.f);
+    m_lightIntensities[3] = glm::vec3(0.5, 0.5, 0.5);
 
     // ambient and diffuse coefficients
     m_k_a = 0.2f;
     m_k_d = 0.8f;
 
     // set up coefficients and ambient intensity
-    m_O_a = glm::vec3( 1.0,  1.0, 1.0 );    // ambient sphere color -- each channel in [0,1]
-    m_O_d = glm::vec3( 1.0,  1.0, 1.0 );    // diffuse sphere color
-    m_i_a = glm::vec3( 0.25, 0.25, 0.25 ); // ambient light intensity
+    m_O_a = glm::vec3(1.0,  1.0, 1.0);    // ambient sphere color -- each channel in [0,1]
+    m_O_d = glm::vec3(1.0,  1.0, 1.0);    // diffuse sphere color
+    m_i_a = glm::vec3(0.25, 0.25, 0.25); // ambient light intensity
 
     m_lastUpdate = QTime(0,0).msecsTo(QTime::currentTime());
     m_numFrames = 0;
@@ -73,36 +73,36 @@ GLWidget::~GLWidget()
 
 void GLWidget::initializeGL()
 {
-    fprintf( stdout, "Using OpenGL Version %s\n", glGetString( GL_VERSION ) );
+    fprintf(stdout, "Using OpenGL Version %s\n", glGetString(GL_VERSION));
 
     //initialize glew
     GLenum err = glewInit();
-    if ( GLEW_OK != err )
+    if (GLEW_OK != err)
     {
       /* Problem: glewInit failed, something is seriously wrong. */
-      fprintf( stderr, "Error: %s\n", glewGetErrorString( err ) );
+      fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
-    fprintf( stdout, "Status: Using GLEW %s\n", glewGetString( GLEW_VERSION ) );
+    fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
     createShaderPrograms();
-    createFramebufferObjects( width(), height() );
+    createFramebufferObjects(width(), height());
 
     // Create data
     initializeParticles();
     generateFlowers();
 
     // Enable depth testing, so that objects are occluded based on depth instead of drawing order
-    glEnable( GL_DEPTH_TEST );
+    glEnable(GL_DEPTH_TEST);
 
     // Enable back-face culling, meaning only the front side of every face is rendered
-    glEnable( GL_CULL_FACE );
-    glCullFace( GL_BACK );
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 
     // Specify that the front face is represented by vertices in counterclockwise order (this is the default)
-    glFrontFace( GL_CCW );
+    glFrontFace(GL_CCW);
 
     // Set the screen color when the color buffer is cleared (in RGBA format)
-    glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     // Load the initial settings
     updateCamera();
@@ -140,14 +140,20 @@ void GLWidget::initializeParticles() {
  **/
 void GLWidget::createShaderPrograms()
 {
-    m_shaderPrograms[ "flower" ] = ResourceLoader::loadShaders( ":/shaders/phong.vert", ":/shaders/phong.frag" );
-    m_sphere.init( glGetAttribLocation( m_shaderPrograms[ "flower" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "flower" ], "normal" ) );
+    m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/phong.vert", ":/shaders/phong.frag");
 
-    m_shaderPrograms[ "tex" ] = ResourceLoader::loadShaders( ":/shaders/tex.vert", ":/shaders/tex.frag" );
-    m_texquad.init(glGetAttribLocation(m_shaderPrograms[ "tex" ], "position"),glGetAttribLocation(m_shaderPrograms[ "tex" ], "texCoords" ) );
+    m_shaderPrograms["planet"] = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
+    m_sphere.init(70, 70,
+                  glGetAttribLocation(m_shaderPrograms["planet"], "position"),
+                  glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
 
-    m_shaderPrograms[ "star" ] = ResourceLoader::loadShaders( ":/shaders/star.vert",":/shaders/star.frag" );
-    m_particle.init(glGetAttribLocation(m_shaderPrograms[ "star" ], "position"),glGetAttribLocation(m_shaderPrograms[ "star" ], "texCoord" ));
+    m_shaderPrograms["tex"] = ResourceLoader::loadShaders(":/shaders/tex.vert", ":/shaders/tex.frag");
+    m_texquad.init(glGetAttribLocation(m_shaderPrograms["tex"], "position"),
+                   glGetAttribLocation(m_shaderPrograms["tex"], "texCoords"));
+
+    m_shaderPrograms["star"] = ResourceLoader::loadShaders(":/shaders/star.vert",":/shaders/star.frag");
+    m_particle.init(glGetAttribLocation(m_shaderPrograms["star"], "position"),
+                    glGetAttribLocation(m_shaderPrograms["star"], "texCoord"));
 }
 
 /**
@@ -156,37 +162,57 @@ void GLWidget::createShaderPrograms()
   @param width: the viewport width
   @param height: the viewport height
  **/
-void GLWidget::createFramebufferObjects( int width, int height )
+void GLWidget::createFramebufferObjects(int width, int height)
 {
     // Creates the star FBO and texture
-    glGenFramebuffers( 1, &m_starFBO );
-    glBindFramebuffer( GL_FRAMEBUFFER, m_starFBO );
-    glActiveTexture( GL_TEXTURE0 ); // Texture 0 is for stars
-    glGenTextures( 1, &m_starColorAttachment );
-    glBindTexture( GL_TEXTURE_2D, m_starColorAttachment );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_starColorAttachment, 0);
+    glGenFramebuffers(1, &m_starFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_starFBO);
+    glActiveTexture(GL_TEXTURE0); // Texture 0 is for stars
+    glGenTextures(1, &m_starColorAttachment);
+    glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_starColorAttachment, 0);
 
-    // Creates the shape FBO and texture
-    glGenFramebuffers( 1, &m_shapeFBO );
-    glBindFramebuffer( GL_FRAMEBUFFER, m_shapeFBO );
-    glActiveTexture( GL_TEXTURE1 ); // Texture 1 is for shapes
-    glGenTextures( 1, &m_shapeColorAttachment );
-    glBindTexture( GL_TEXTURE_2D, m_shapeColorAttachment );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_shapeColorAttachment, 0);
+    // Creates the flower FBO and texture
+    glGenFramebuffers(1, &m_planetFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
+    glActiveTexture(GL_TEXTURE1); // Texture 1 is for planet
+    glGenTextures(1, &m_planetColorAttachment);
+    glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_planetColorAttachment, 0);
 
-    // Needed to do depth on planet and flowers
-    glGenRenderbuffers( 1, &m_shapeDepthAttachment );
-    glBindRenderbuffer( GL_RENDERBUFFER, m_shapeDepthAttachment );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height );
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_shapeDepthAttachment );
+    // Needed to do depth on planet
+    GLuint planetDepth;
+    glGenRenderbuffers(1, &planetDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, planetDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, planetDepth);
 
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    // Creates the flower FBO and texture
+    glGenFramebuffers(1, &m_flowerFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_flowerFBO);
+    glActiveTexture(GL_TEXTURE2); // Texture 2 is for flowers
+    glGenTextures(1, &m_flowerColorAttachment);
+    glBindTexture(GL_TEXTURE_2D, m_flowerColorAttachment);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_flowerColorAttachment, 0);
+
+    // Needed to do depth on flowers
+    GLuint flowerDepth;
+    glGenRenderbuffers(1, &flowerDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, flowerDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, flowerDepth);
+
+    // Clear
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GLWidget::paintGL()
@@ -201,9 +227,9 @@ void GLWidget::paintGL()
         m_lastUpdate = time;
     }
 
-    renderPlanetPass();
     renderStarPass();
-    renderGeometryPass();
+    renderPlanetPass();
+    renderFlowerPass();
     renderFinalPass();
 
     // TODO: Take out paint fps info
@@ -213,37 +239,9 @@ void GLWidget::paintGL()
 }
 
 
-/**
-  Renders the spheres in our scene. We'll bind the Phong shader in here.
-**/
-void GLWidget::renderShapes()
+void GLWidget::renderFlowers()
 {
-
-    // TEST OUT BEING ABLE TO DRAW ANOTHER SPHERE
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
     Transforms sphereTransform = m_transform;
-
-    sphereTransform.model =  glm::translate( glm::vec3( x, y, z ) )  * glm::scale( glm::vec3( 1.5f, 1.5f, 1.5f) ) * sphereTransform.model;
-
-    //   - Set the necessary uniforms (can be found in phong.vert and phong.frag)
-    glUniform1f(glGetUniformLocation(m_shaderPrograms["flower"], "k_a"), m_k_a);
-    glUniform1f(glGetUniformLocation(m_shaderPrograms["flower"], "k_d"), m_k_d);
-
-    glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "O_a"), 1, glm::value_ptr(m_O_a));
-    glUniform3f(glGetUniformLocation(m_shaderPrograms["flower"], "O_d"), m_O_d.x, m_O_d.y, m_O_d.z);
-    glUniform3f(glGetUniformLocation(m_shaderPrograms["flower"], "i_a"), m_i_a.x, m_i_a.y, m_i_a.z);
-
-    glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "lightIntensities"), NUM_LIGHTS, glm::value_ptr(m_lightIntensities[0]));
-    glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "lightPositions"), NUM_LIGHTS, glm::value_ptr(m_lightPositions[0]));
-
-    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
-
-    m_sphere.render();
-
-    sphereTransform = m_transform;
 
     // iterate through each of the flowers and render the components
     for (std::list<Flower *>::const_iterator iterator = m_flowers.begin(), end = m_flowers.end(); iterator != end; ++iterator) {
@@ -268,16 +266,13 @@ void GLWidget::renderShapes()
 
             sphereTransform.model = f->petalModels[i];
 
-	    // hard code some of the colors
+            // hard code some of the colors
             glUniform1f(glGetUniformLocation(m_shaderPrograms["flower"], "k_a"), 0.5f);
             glUniform1f(glGetUniformLocation(m_shaderPrograms["flower"], "k_d"), 0.0f);
 
             glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "O_a"), 1, glm::value_ptr(f->petalColor));
             glUniform3f(glGetUniformLocation(m_shaderPrograms["flower"], "O_d"), f->petalColor.r, f->petalColor.g, f->petalColor.b);
             glUniform3f(glGetUniformLocation(m_shaderPrograms["flower"], "i_a"), 0.01, 0.01, 0.01);
-
-            glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "lightIntensities"), NUM_LIGHTS, glm::value_ptr(m_lightIntensities[0]));
-            glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "lightPositions"), NUM_LIGHTS, glm::value_ptr(m_lightPositions[0]));
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
@@ -351,10 +346,20 @@ void GLWidget::renderStars() {
 
 }
 
+void GLWidget::renderPlanet() {
+    Transforms sphereTransform = m_transform;
+
+    // Set the necessary uniforms
+    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["planet"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+
+    // Render it
+    m_sphere.render();
+}
+
 void GLWidget::renderStarPass()
 {
     glUseProgram(m_shaderPrograms["star"]);
-    glBindFramebuffer( GL_FRAMEBUFFER, m_starFBO );
+    glBindFramebuffer(GL_FRAMEBUFFER, m_starFBO);
     glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
     glActiveTexture(GL_TEXTURE0);
     glClearColor(0,0,0,0);
@@ -372,57 +377,75 @@ void GLWidget::renderStarPass()
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
 }
 
-void GLWidget::renderGeometryPass()
+void GLWidget::renderFlowerPass()
 {
     glUseProgram(m_shaderPrograms["flower"]);
-    glBindFramebuffer( GL_FRAMEBUFFER, m_shapeFBO );
+    glBindFramebuffer(GL_FRAMEBUFFER, m_flowerFBO);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_shapeColorAttachment);
+    glBindTexture(GL_TEXTURE_2D, m_flowerColorAttachment);
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw shapes with depth and no blending
-    renderShapes();
+    renderFlowers();
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
 }
 
 void GLWidget::renderPlanetPass()
 {
+    glUseProgram(m_shaderPrograms["planet"]);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
+    glClearColor(0,0,0,0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // Draw the planet with depth and no blending
+    renderPlanet();
+
+    // Clear
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(0);
 }
 
 void GLWidget::renderFinalPass()
 {
     // Draw to the screen
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(m_shaderPrograms["tex"]);
     glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "starTex"), 0);
+    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "planetTex"), 1);
     glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "flowerTex"), 2);
 
     // Draw composed stars
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
 
-    // Draw composed shapes
+    // Draw composed planet
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
+
+    // Draw composed flowers
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_shapeColorAttachment);
+    glBindTexture(GL_TEXTURE_2D, m_flowerColorAttachment);
     renderTexturedQuad();
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
     glUseProgram(0);
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 // make flower gardens!
@@ -437,18 +460,24 @@ void GLWidget::generateFlowers()
     for (int i = 0; i < flowerVariety; i++) {
     	// our template flower
         Flower *f = new Flower();
-        f->stem.init(glGetAttribLocation( m_shaderPrograms[ "flower" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "flower" ], "normal" ));
+        f->stem.init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                     glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
         for (int j = 0; j < f->petalCount; j++) {
-            f->petals[j].init(glGetAttribLocation( m_shaderPrograms[ "flower" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "flower" ], "normal" ));
+            f->petals[j].init(5,5,
+                              glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                              glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
         }
         m_flowers.push_back(f);
 
-	// other similar flowers
+        // other similar flowers
         for (int j = 0; j < gardenSize; j++) {
             Flower *next = new Flower(f);
-            next->stem.init(glGetAttribLocation( m_shaderPrograms[ "flower" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "flower" ], "normal" ));
+            next->stem.init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                            glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
             for (int j = 0; j < next->petalCount; j++) {
-                next->petals[j].init(glGetAttribLocation( m_shaderPrograms[ "flower" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "flower" ], "normal" ));
+                next->petals[j].init(5,5,
+                                     glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                                     glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
             }
             m_flowers.push_back(next);
         }
@@ -468,8 +497,8 @@ void GLWidget::generateFlowers()
 void GLWidget::renderTexturedQuad()
 {
     // Clamp value to edge of texture when texture index is out of bounds
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     m_texquad.draw();
 }
 
@@ -477,16 +506,16 @@ void GLWidget::renderTexturedQuad()
   Called when the screen gets resized.
   The camera is updated when the screen resizes because the aspect ratio may change.
 **/
-void GLWidget::resizeGL( int width, int height )
+void GLWidget::resizeGL(int width, int height)
 {
     // Set the viewport to fill the screen
-    glViewport( 0, 0, width, height );
+    glViewport(0, 0, width, height);
 
     // Update the camera
     updateCamera();
 
     // Resize all used textures
-    createFramebufferObjects( width, height );
+    createFramebufferObjects(width, height);
 }
 
 /**
@@ -501,11 +530,11 @@ void GLWidget::updateCamera()
     float aspectRatio = 1.0f * w / h;
 
     float ratio = 1.0f * w / h;
-    glm::vec3 dir( -fromAnglesN( m_camera.theta, m_camera.phi ) );
-    glm::vec3 eye( m_camera.center - dir * m_camera.zoom );
+    glm::vec3 dir(-fromAnglesN(m_camera.theta, m_camera.phi));
+    glm::vec3 eye(m_camera.center - dir * m_camera.zoom);
 
-    m_transform.projection = glm::perspective( m_camera.fovy, ratio, 0.1f, 1000.f );
-    m_transform.view = glm::lookAt( eye, m_camera.center, m_camera.up );
+    m_transform.projection = glm::perspective(m_camera.fovy, ratio, 0.1f, 1000.f);
+    m_transform.view = glm::lookAt(eye, m_camera.center, m_camera.up);
 
     m_camera.eye = eye;
 }
@@ -515,11 +544,11 @@ void GLWidget::updateCamera()
  **/
 void GLWidget::paintText()
 {
-    glColor3f( 1.f, 1.f, 1.f );
+    glColor3f(1.f, 1.f, 1.f);
 
     // QGLWidget's renderText takes xy coordinates, a string, and a font
-    renderText( 10, 20, "FPS: " + QString::number( ( int ) ( m_currentFPS + .5f ) ), m_font );
-    renderText( 10, 35, "S: Save screenshot", m_font );
+    renderText(10, 20, "FPS: " + QString::number((int) (m_currentFPS + .5f)), m_font);
+    renderText(10, 35, "S: Save screenshot", m_font);
 }
 
 
@@ -537,15 +566,15 @@ void GLWidget::tick()
 /**
   Handles any key press from the keyboard
  **/
-void GLWidget::keyPressEvent( QKeyEvent *event )
+void GLWidget::keyPressEvent(QKeyEvent *event)
 {
-    switch( event->key() )
+    switch(event->key())
     {
         case Qt::Key_S:
-        QImage qi = grabFrameBuffer( false );
+        QImage qi = grabFrameBuffer(false);
         QString filter;
-        QString fileName = QFileDialog::getSaveFileName( this, tr( "Save Image" ), "", tr( "PNG Image (*.png)" ), &filter );
-        qi.save( QFileInfo( fileName ).absoluteDir().absolutePath() + "/" + QFileInfo( fileName ).baseName() + ".png", "PNG", 100 );
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "", tr("PNG Image (*.png)"), &filter);
+        qi.save(QFileInfo(fileName).absoluteDir().absolutePath() + "/" + QFileInfo(fileName).baseName() + ".png", "PNG", 100);
         break;
     }
 }
@@ -554,12 +583,12 @@ void GLWidget::keyPressEvent( QKeyEvent *event )
 /**
   Called when the mouse is dragged.  Rotates the camera based on mouse movement.
 **/
-void GLWidget::mouseMoveEvent( QMouseEvent *event )
+void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    glm::vec2 pos( event->x(), event->y() );
-    if ( event->buttons() & Qt::LeftButton || event->buttons() & Qt::RightButton )
+    glm::vec2 pos(event->x(), event->y());
+    if (event->buttons() & Qt::LeftButton || event->buttons() & Qt::RightButton)
     {
-        m_camera.mouseMove( pos - m_prevMousePos );
+        m_camera.mouseMove(pos - m_prevMousePos);
     }
     m_prevMousePos = pos;
 }
@@ -567,7 +596,7 @@ void GLWidget::mouseMoveEvent( QMouseEvent *event )
 /**
   Record a mouse press position.
  **/
-void GLWidget::mousePressEvent( QMouseEvent *event )
+void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     m_prevMousePos.x = event->x();
     m_prevMousePos.y = event->y();
@@ -576,10 +605,10 @@ void GLWidget::mousePressEvent( QMouseEvent *event )
 /**
   Called when the mouse wheel is turned.  Zooms the camera in and out.
 **/
-void GLWidget::wheelEvent( QWheelEvent *event )
+void GLWidget::wheelEvent(QWheelEvent *event)
 {
-    if ( event->orientation() == Qt::Vertical )
+    if (event->orientation() == Qt::Vertical)
     {
-        m_camera.mouseWheel( event->delta() );
+        m_camera.mouseWheel(event->delta());
     }
 }

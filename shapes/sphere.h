@@ -11,12 +11,9 @@ public:
     // uninitialized sphere
     Sphere();
 
-    // initialized sphere
-    Sphere(GLuint position, GLuint normal);
-
     ~Sphere();
 
-    void init(GLuint position, GLuint normal);
+    void init(int p1, int p2, GLuint position, GLuint normal);
 
     void render();
 
@@ -26,8 +23,8 @@ private:
 
     GLfloat *m_vertexBufferData;
     GLuint m_vaoID;
-    int m_p1 = 8;
-    int m_p2 = 8;
+    int m_p1;
+    int m_p2;
     bool m_isInitialized;
     void addVertexNormal(glm::vec3 vertex, glm::vec3 normal, int *startIndex);
     glm::vec3 cartesianFromDegs(double theta, double phi, double radians);

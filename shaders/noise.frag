@@ -1,12 +1,16 @@
-#version 330
+#version 330 core
 
 in float noise;
+
+out vec4 fragColor;
 
 void main() {
     vec3 color;
     float thresh = noise * 100.0;
     
     // Lakes - creates islands too!
+    if (thresh < 1.77) {
+        color = vec3(0,0,0.5) * (0.7 + 6.0 * noise);
     }
     
     // Ground
@@ -15,6 +19,6 @@ void main() {
     }
     // Uniform gray color, darker valleys
     //color = vec3(0.38, 0.38, 0.4) * ( 0.25 + 5.0 * noise );
-    gl_FragColor = vec4( color.rgb * 1.3, 1.0 );
+    fragColor = vec4( color.rgb * 1.3, 1.0 );
  
 }  

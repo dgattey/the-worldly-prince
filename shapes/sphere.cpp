@@ -6,14 +6,6 @@ Sphere::Sphere()
     m_isInitialized = false;
 }
 
-Sphere::Sphere(const GLuint vertexLocation, const GLuint normalLocation)
-{
-    // The sphere can't have fewer than 3 sides
-    m_p1 = 20;
-    m_p2 = 20;
-    init(vertexLocation, normalLocation);
-}
-
 Sphere::~Sphere()
 {
     if (m_vertexBufferData != NULL) {
@@ -21,8 +13,10 @@ Sphere::~Sphere()
     }
 }
 
-void Sphere::init(const GLuint vertexLocation, const GLuint normalLocation)
+void Sphere::init(int p1, int p2, const GLuint vertexLocation, const GLuint normalLocation)
 {
+    m_p1 = p1;
+    m_p2 = p2;
     m_isInitialized = true;
     // The current index into the buffer data array
     int i = 0;

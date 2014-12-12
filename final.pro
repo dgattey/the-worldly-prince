@@ -51,7 +51,9 @@ OTHER_FILES += \
     shaders/lights.frag \
     shaders/lights.vert \
     shaders/star.frag \
-    shaders/star.vert
+    shaders/star.vert \
+    shaders/noise.frag \
+    shaders/noise.vert
 
 RESOURCES += \
     shaders/shaders.qrc
