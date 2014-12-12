@@ -101,14 +101,18 @@ void Particle::draw(){
 //        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 //        glDepthMask(GL_FALSE);
 //        glEnable(GL_BLEND);
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glDepthMask(GL_FALSE);
+        glEnable(GL_BLEND);
         // Rebind your vertex array and draw the triangles
         glBindVertexArray(m_vaoID);
         glDrawArrays(GL_TRIANGLES, 0, NUM_TRIS*3);
         glBindVertexArray(0);
 
-//        glAccum(GL_MULT,0.5);
-//        glAccum(GL_ACCUM,1);
-//        glAccum(GL_RETURN,1);
+        glAccum(GL_MULT,0.5);
+        glAccum(GL_ACCUM,1);
+        glAccum(GL_RETURN,1);
     }
 
 //    else{

@@ -14,6 +14,6 @@ void main(){
     float dx = 0.5f - uv.x;
     float dy = 0.5f - uv.y;
     float radius = sqrt(dx*dx + dy*dy);
-    float opacity = 0.5f - radius;
-    fragColor = color * color.a * opacity * 2.0f;//texColor*color;//(0.5*color) + (0.5*texColor);
+    float opacity = pow(0.75f - radius,2);
+    fragColor = color * color.a * opacity * 3.0f;//texColor*color;//(0.5*color) + (0.5*texColor);
 }
