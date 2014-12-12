@@ -20,7 +20,8 @@ SOURCES += src/settings.cpp \
     particle.cpp \
     shapes/shape.cpp \
     shapes/sphere.cpp \
-    shapes/cylinder.cpp
+    shapes/cylinder.cpp \
+    shapes/flower.cpp
 
 HEADERS += \
     src/settings.h \
@@ -35,7 +36,8 @@ HEADERS += \
     particle.h \
     shapes/shape.h \
     shapes/sphere.h \
-    shapes/cylinder.h
+    shapes/cylinder.h \
+    shapes/flower.h
 
 FORMS += src/mainwindow.ui
 

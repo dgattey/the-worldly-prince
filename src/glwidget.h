@@ -8,6 +8,7 @@
 #include "cs123_lib/transforms.h"
 #include "texquad.h"
 #include "particle.h"
+#include "flower.h"
 #include "cylinder.h"
 #include "sphere.h"
 
@@ -15,17 +16,6 @@
 #define NUM_LIGHTS 4
 
 class QGLFramebufferObject;
-
-struct Flower {
-    Cylinder stem;
-    glm::mat4x4 cylModel;
-
-    int petalCount;
-    Sphere *petals;
-    glm::mat4x4 *petalModels;
-    glm::vec4 *petalColors;
-    //TODO: destructor
-};
 
 class GLWidget : public QGLWidget
 {

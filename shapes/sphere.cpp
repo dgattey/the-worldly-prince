@@ -9,8 +9,8 @@ Sphere::Sphere()
 Sphere::Sphere(const GLuint vertexLocation, const GLuint normalLocation)
 {
     // The sphere can't have fewer than 3 sides
-    m_p1 = 8;
-    m_p2 = 8;
+    m_p1 = 20;
+    m_p2 = 20;
     init(vertexLocation, normalLocation);
 }
 
