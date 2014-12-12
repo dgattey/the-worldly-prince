@@ -1,15 +1,17 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
-#include "GL/glew.h"
+#include <GL/glew.h>
 #include <QGLWidget>
 #include <QTimer>
 #include "camera.h"
 #include <GL/glu.h>
 #include "cs123_lib/transforms.h"
-#include "sphere.h"
 #include "texquad.h"
 #include "particle.h"
-#include "shapes/Cylinder.h"
+#include "flower.h"
+#include "cylinder.h"
+#include "sphere.h"
+
 
 #define NUM_LIGHTS 4
 
@@ -91,6 +93,8 @@ protected:
     void renderStarPass();
     void paintText();
 
+    void generateFlowers();
+
     GLuint loadTexture(const QString &path);
     void initializeParticles();
 
@@ -106,7 +110,7 @@ private:
     int m_numParticles;
     ParticleData *m_particleData;
 
-    Cylinder *m_cylinder;
+    std::list<Flower *> m_flowers;
     QTimer m_timer;
     float m_fps;
     float m_increment;
