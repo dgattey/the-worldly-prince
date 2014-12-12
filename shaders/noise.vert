@@ -117,11 +117,9 @@ float turbulence( vec3 p ) {
  
 void main() {
  
-    screenCoord = gl_Vertex;
- 
-    noise = 5.0 *  -0.05 * turbulence(0.74 * normal);
-    float disturbance =  pnoise(0.2 * position, vec3(100.0));
-    float displacement = 25.0 * noise + disturbance;
+    noise = 6.6 *  -0.018 * turbulence(0.8 * normal);
+    float disturbance =  pnoise(0.1 * position, vec3(100.0));
+    float displacement = 2.0 * noise + disturbance;
      
     vec3 newPosition = position + normal * displacement;
     gl_Position = projection * view * model * vec4(newPosition, 1.0);
