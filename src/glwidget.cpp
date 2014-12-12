@@ -325,6 +325,7 @@ void GLWidget::renderShapes()
 
     sphereTransform = m_transform;
 
+    // iterate through each of the flowers and render the components
     for (std::list<Flower *>::const_iterator iterator = m_flowers.begin(), end = m_flowers.end(); iterator != end; ++iterator) {
         Flower *f = *iterator;
         sphereTransform.model = f->cylModel;
@@ -347,6 +348,7 @@ void GLWidget::renderShapes()
 
             sphereTransform.model = f->petalModels[i];
 
+	    // hard code some of the colors
             glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_a"), 0.5f);
             glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_d"), 0.0f);
 
@@ -363,9 +365,6 @@ void GLWidget::renderShapes()
         }
     }
 
-
-    // TODO - Step 1.1:
-    //   - Unbind the "phong" shader program
     glUseProgram(0);
 }
 
@@ -559,12 +558,17 @@ void GLWidget::renderStarPass()
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
+// make flower gardens!
 void GLWidget::generateFlowers()
 {
+    // the number of different types of flowers to generate
     int flowerVariety = 10;
+    
+    // how many similar flowers we should surround each flower with
     int gardenSize = 15;
 
     for (int i = 0; i < flowerVariety; i++) {
+    	// our template flower
         Flower *f = new Flower();
         f->stem.init(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));
         for (int j = 0; j < f->petalCount; j++) {
@@ -572,6 +576,7 @@ void GLWidget::generateFlowers()
         }
         m_flowers.push_back(f);
 
+	// other similar flowers
         for (int j = 0; j < gardenSize; j++) {
             Flower *next = new Flower(f);
             next->stem.init(glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ));

@@ -10,10 +10,10 @@ class Flower
 {
 public:
     Flower();
+    
+    // copy constructor-ish
     Flower(Flower *around);
     virtual ~Flower();
-
-    void init(GLuint position, GLuint normal);
 
     Cylinder stem;
     glm::mat4x4 cylModel;
