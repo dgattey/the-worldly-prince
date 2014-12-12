@@ -328,7 +328,14 @@ void GLWidget::renderShapes()
     // iterate through each of the flowers and render the components
     for (std::list<Flower *>::const_iterator iterator = m_flowers.begin(), end = m_flowers.end(); iterator != end; ++iterator) {
         Flower *f = *iterator;
+
+        // Flower is behind the planet!
+        if (!f->isVisible(m_camera.eye)) {
+            continue;
+        }
+
         sphereTransform.model = f->cylModel;
+
 
         glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_a"), m_k_a);
         glUniform1f(glGetUniformLocation(m_shaderPrograms["phong"], "k_d"), m_k_d);

@@ -14,6 +14,7 @@ public:
     // copy constructor-ish
     Flower(Flower *around);
     virtual ~Flower();
+    bool isVisible(glm::vec3 cameraEye);
 
     Cylinder stem;
     glm::mat4x4 cylModel;
