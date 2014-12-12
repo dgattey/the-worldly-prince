@@ -20,7 +20,6 @@
 
 #include <QGLFramebufferObject>
 #include <glm/gtx/rotate_vector.hpp>
-//#include "shapes/Cylinder.h"
 
 GLWidget::GLWidget( QWidget *parent )
     : QGLWidget( parent ), m_timer( this ), m_fps( 60.0f ), m_increment( 0 ),
@@ -65,9 +64,6 @@ GLWidget::GLWidget( QWidget *parent )
 
     m_lastUpdate = QTime(0,0).msecsTo(QTime::currentTime());
     m_numFrames = 0;
-
-    initializeParticles();
-
 }
 
 GLWidget::~GLWidget()
@@ -91,6 +87,10 @@ void GLWidget::initializeGL()
     createShaderPrograms();
     createFramebufferObjects( width(), height() );
 
+    // Create data
+    initializeParticles();
+    generateFlowers();
+
     // Enable depth testing, so that objects are occluded based on depth instead of drawing order
     glEnable( GL_DEPTH_TEST );
 
@@ -100,9 +100,6 @@ void GLWidget::initializeGL()
 
     // Specify that the front face is represented by vertices in counterclockwise order (this is the default)
     glFrontFace( GL_CCW );
-
-    // Set up global (ambient) lighting
-    // GLfloat global_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
 
     // Set the screen color when the color buffer is cleared (in RGBA format)
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -115,12 +112,6 @@ void GLWidget::initializeParticles() {
     m_numParticles = 4000;
     m_particleData = new ParticleData[m_numParticles];
     for (int i = 0; i<m_numParticles; i++) {
-//        float theta = urand(0.0f, 2*M_PI);
-//        float phi = urand(0.0f, M_PI);
-//        float radius = urand(100.0f, 400.0f);
-//        float x = radius * sin(phi) * cos(theta);//urand(-400.0f, 400.0f);
-//        float y = radius * sin(phi) * sin(theta);//urand(-400.0f, 400.0f);
-//        float z = radius * cos(phi); //urand(-400.0f, 400.0f);
         float x,y,z;
         float radius = 0.0f;
         while (radius < 100.0f) {
@@ -129,10 +120,6 @@ void GLWidget::initializeParticles() {
             z = urand(-300.0f, 300.0f);
             radius = sqrt(pow(x,2.0f) + pow(y,2.0f) + pow(z,2.0f));
         }
-//        float radius = urand(50.0f,100.0f);
-//        float z = sqrt(pow(radius,2) - pow(x,2) - pow(y,2));
-//        if (urand(0.0f,1.0f) > 0.5f)
-//            z = z * -1.0f;
         m_particleData[i].life = urand(0.0f, 150.0f);//100.0f;
         m_particleData[i].dir = glm::vec3(0.0f,0.0f,0.0f);
         m_particleData[i].pos = glm::vec3(x,y,z);
@@ -147,37 +134,6 @@ void GLWidget::initializeParticles() {
     }
 }
 
-GLuint GLWidget::loadTexture(const QString &path)
-{
-    QImage texture;
-    QFile file(path);
-    if(!file.exists()) return -1;
-    texture.load(file.fileName());
-    texture = QGLWidget::convertToGLFormat(texture);
-
-    // Put your code here
-
-    // Generate a new OpenGL texture ID to put our image into
-    GLuint id = 0;
-    glGenTextures(1, &id);
-
-    // Make the texture we just created the new active texture
-    glBindTexture(GL_TEXTURE_2D, id);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, 3, texture.width(), texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.bits());
-    // Copy the image data into the OpenGL texture
-
-    // Set filtering options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); //_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-//    // Set coordinate wrapping options
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return id; // Return something meaningful
-}
 
 /**
   Create shader programs. Use the ResourceLoader new*ShaderProgram helper methods.
@@ -186,18 +142,12 @@ void GLWidget::createShaderPrograms()
 {
     m_shaderPrograms[ "phong" ] = ResourceLoader::loadShaders( ":/shaders/phong.vert", ":/shaders/phong.frag" );
     m_sphere.init( glGetAttribLocation( m_shaderPrograms[ "phong" ], "position" ), glGetAttribLocation( m_shaderPrograms[ "phong" ], "normal" ) );
-    generateFlowers();
 
-    m_shaderPrograms[ "lights" ] = ResourceLoader::loadShaders( ":/shaders/lights.vert",":/shaders/lights.frag" );
-    m_shaderPrograms[ "brightpass" ] = ResourceLoader::loadShaders( ":/shaders/tex.vert", ":/shaders/brightpass.frag" );
-    m_shaderPrograms[ "lightblur" ] = ResourceLoader::loadShaders( ":/shaders/tex.vert", ":/shaders/lightblur.frag" );
     m_shaderPrograms[ "tex" ] = ResourceLoader::loadShaders( ":/shaders/tex.vert", ":/shaders/tex.frag" );
     m_texquad.init(glGetAttribLocation(m_shaderPrograms[ "tex" ], "position"),glGetAttribLocation(m_shaderPrograms[ "tex" ], "texCoords" ) );
 
     m_shaderPrograms[ "star" ] = ResourceLoader::loadShaders( ":/shaders/star.vert",":/shaders/star.frag" );
     m_particle.init(glGetAttribLocation(m_shaderPrograms[ "star" ], "position"),glGetAttribLocation(m_shaderPrograms[ "star" ], "texCoord" ));
-
-    m_starTexture = loadTexture(":/textures/particle2.bmp");//3.jpg");
 }
 
 /**
@@ -208,66 +158,33 @@ void GLWidget::createShaderPrograms()
  **/
 void GLWidget::createFramebufferObjects( int width, int height )
 {
-    // Allocate the main framebuffer object for rendering the scene to
-
-    // Creates the phong FBO
-    glGenFramebuffers( 1, &m_phongFBO );
-    glBindFramebuffer( GL_FRAMEBUFFER, m_phongFBO );
-
-    glActiveTexture( GL_TEXTURE0 );
-    glGenTextures( 1, &m_phongColorAttachment );
-    glBindTexture( GL_TEXTURE_2D, m_phongColorAttachment );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_phongColorAttachment, 0);
-
-    glGenRenderbuffers( 1, &m_phongDepthAttachment );
-    glBindRenderbuffer( GL_RENDERBUFFER, m_phongDepthAttachment );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height );
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_phongDepthAttachment );
-
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-    // TODO - Step 2.1: Create an FBO for brightPass. You don't need a depth attachment for this one.
-    glGenFramebuffers( 1, &m_brightPassFBO );
-    glBindFramebuffer( GL_FRAMEBUFFER, m_brightPassFBO );
-
-//    glActiveTexture( GL_TEXTURE1 );
-    glGenTextures( 1, &m_brightPassColorAttachment );
-    glBindTexture( GL_TEXTURE_2D, m_brightPassColorAttachment );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_brightPassColorAttachment, 0);
-
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-    // TODO - Step 2.1: Create an FBO for blur. You don't need a depth attachment for this one either.
-    glGenFramebuffers( 1, &m_blurFBO );
-    glBindFramebuffer( GL_FRAMEBUFFER, m_blurFBO );
-
-//    glActiveTexture( GL_TEXTURE2 );
-    glGenTextures( 1, &m_blurColorAttachment );
-    glBindTexture( GL_TEXTURE_2D, m_blurColorAttachment );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_blurColorAttachment, 0);
-
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-    // STAR FBO ?????????????????????????????????????
+    // Creates the star FBO and texture
     glGenFramebuffers( 1, &m_starFBO );
     glBindFramebuffer( GL_FRAMEBUFFER, m_starFBO );
-
-//    glActiveTexture( GL_TEXTURE2 );
+    glActiveTexture( GL_TEXTURE0 ); // Texture 0 is for stars
     glGenTextures( 1, &m_starColorAttachment );
     glBindTexture( GL_TEXTURE_2D, m_starColorAttachment );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
     glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_starColorAttachment, 0);
+
+    // Creates the shape FBO and texture
+    glGenFramebuffers( 1, &m_shapeFBO );
+    glBindFramebuffer( GL_FRAMEBUFFER, m_shapeFBO );
+    glActiveTexture( GL_TEXTURE1 ); // Texture 1 is for shapes
+    glGenTextures( 1, &m_shapeColorAttachment );
+    glBindTexture( GL_TEXTURE_2D, m_shapeColorAttachment );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_shapeColorAttachment, 0);
+
+    // Needed to do depth on planet and flowers
+    glGenRenderbuffers( 1, &m_shapeDepthAttachment );
+    glBindRenderbuffer( GL_RENDERBUFFER, m_shapeDepthAttachment );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height );
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_shapeDepthAttachment );
 
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
@@ -284,21 +201,12 @@ void GLWidget::paintGL()
         m_lastUpdate = time;
     }
 
-//    renderStarPass();
-
-    // Draw scene
+    renderPlanetPass();
+    renderStarPass();
     renderGeometryPass();
-
-    // Process brightpass
-//    renderBrightPass();
-
-    // Process blur
-//    renderBlur( width(), height() );
-
-    // Process final pass
     renderFinalPass();
 
-    // paint fps info
+    // TODO: Take out paint fps info
     paintText();
 
     updateCamera();
@@ -310,9 +218,6 @@ void GLWidget::paintGL()
 **/
 void GLWidget::renderShapes()
 {
-    // TODO - Step 1.1:
-    //   - Bind the "phong" shader program
-    glUseProgram(m_shaderPrograms["phong"]);
 
     // TEST OUT BEING ABLE TO DRAW ANOTHER SPHERE
     float x = 0.0f;
@@ -379,21 +284,9 @@ void GLWidget::renderShapes()
             f->petals[i].render();
         }
     }
-
-    glUseProgram(0);
 }
 
 void GLWidget::renderStars() {
-    // TODO : Use particles to render stars in the sky!
-//    glUseProgram(m_shaderPrograms[ "star" ]);
-//    glBindTexture(GL_TEXTURE_2D, m_starTexture);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the color & depth buffers.
-    glActiveTexture(GL_TEXTURE0); // Set the active texture to texture 0.
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["star"],"textureSampler"), 0); // Tell the shader to use texture 0.
-
-    glUseProgram(m_shaderPrograms[ "star" ]);
-    glBindTexture(GL_TEXTURE_2D, m_starTexture);
-
     for(int i =0; i<m_numParticles; i++) {
 
         Transforms particleTransform = m_transform;
@@ -456,157 +349,78 @@ void GLWidget::renderStars() {
         }
     }
 
-    glUseProgram(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-//    glFlush();
-//    swapBuffers();
 }
 
-
-/**
-  Run a gaussian blur on the texture stored in fbo 2 and
-  put the result in fbo 1.  The blur should have a radius of 8.
-
-  @param width: the viewport width
-  @param height: the viewport height
-**/
-void GLWidget::renderBlur( int width, int height )
+void GLWidget::renderStarPass()
 {
-    int radius = 3;
-    int dim = radius * 2 + 1;
-    GLint arraySize = dim * dim;
-    GLfloat kernel[ arraySize ];
-    GLfloat offsets[ arraySize * 2 ];
-    createBlurKernel ( radius, width, height, &kernel[ 0 ], &offsets[ 0 ] );
-
-    // TODO - Step 2.4:
-    //   - Bind and clear the appropriate frame buffer
-    //   - Bind the "lightblur" shader program
-    //   - Set the necessary uniforms
-    //   - Render the appropriate textured quad
-    //   - Unbind the shader program
-    glBindFramebuffer( GL_FRAMEBUFFER, m_blurFBO );
+    glUseProgram(m_shaderPrograms["star"]);
+    glBindFramebuffer( GL_FRAMEBUFFER, m_starFBO );
+    glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
+    glActiveTexture(GL_TEXTURE0);
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(m_shaderPrograms["lightblur"]);
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["lightblur"], "tex"), 0);
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["lightblur"], "arraySize"), arraySize);
-    glUniform2fv(glGetUniformLocation(m_shaderPrograms["lightblur"], "offsets"), arraySize, &offsets[0]);
-    glUniform1fv(glGetUniformLocation(m_shaderPrograms["lightblur"], "kernel"), arraySize, &kernel[0]);
+    // Draws stars without depth and with blending and reset
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_brightPassColorAttachment);
-    renderTexturedQuad();
+    renderStars();
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    glUseProgram(0);
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-
+    glUseProgram(0);
 }
 
-void GLWidget::renderBrightPass()
+void GLWidget::renderGeometryPass()
 {
-    // TODO - Step 2.3:
-    //   - Bind and clear the appropriate frame buffer
-    //   - Bind the "brightpass" shader program
-    //   - Set the necessary uniforms
-    //   - Render the appropriate textured quad
-    glBindFramebuffer( GL_FRAMEBUFFER, m_brightPassFBO );
+    glUseProgram(m_shaderPrograms["phong"]);
+    glBindFramebuffer( GL_FRAMEBUFFER, m_shapeFBO );
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_shapeColorAttachment);
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//    glClearColor(0,0,0,0);
 
-    glUseProgram(m_shaderPrograms["brightpass"]);
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["brightpass"], "tex"), 0);
+    // Draw shapes with depth and no blending
+    renderShapes();
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_phongColorAttachment); //use mbrightpass??????????????????????
-    renderTexturedQuad();
+    // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    glUseProgram(0);
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glUseProgram(0);
+}
+
+void GLWidget::renderPlanetPass()
+{
+
 }
 
 void GLWidget::renderFinalPass()
 {
-    // TODO - Step 2.5:
-    //   - Bind and clear the appropriate frame buffer
-    //   - Bind the "tex" shader program
-    //   - Set the necessary uniforms
-    //   - Render the appropriate textured quad
+    // Draw to the screen
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(m_shaderPrograms["tex"]);
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "originalTex"), 0);
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "blurTex"), 1);
+    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "starTex"), 0);
+    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "flowerTex"), 2);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_phongColorAttachment);
-//    renderTexturedQuad();
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_blurColorAttachment);
-    renderTexturedQuad();
-//    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glUseProgram(0);
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-}
-
-void GLWidget::renderGeometryPass()
-{
-    // TODO - Step 2.2:
-    //   - Bind the appropriate FBO and clear it
-    glBindFramebuffer( GL_FRAMEBUFFER, m_phongFBO );
-    glUseProgram(m_shaderPrograms["phong"]);
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    // Draw composed stars
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glDepthMask(GL_FALSE);
-    glEnable(GL_BLEND);
-    // Rebind your vertex array and draw the triangles
+    // Draw composed shapes
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_shapeColorAttachment);
+    renderTexturedQuad();
 
-    renderStars();
-
-//    glAccum(GL_MULT,0.5);
-//    glAccum(GL_ACCUM,1);
-//    glAccum(GL_RETURN,1);
-
-    glDisable(GL_BLEND);
-
-//    renderStars();
-    renderShapes();
-//    renderLights();
-
+    // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    // TODO - Step 2.2:
-    //  - Unbind the FBO
-    glUseProgram(0);
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-}
-
-void GLWidget::renderStarPass()
-{
-    glBindFramebuffer( GL_FRAMEBUFFER, m_starFBO );
-    glUseProgram(m_shaderPrograms["star"]);
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    renderStars();
-
     glUseProgram(0);
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
@@ -642,26 +456,6 @@ void GLWidget::generateFlowers()
 }
 
 ////////// HELPER CODE ///////////
-
-/**
- * Draw small white spheres to tell us where our lights are.
- */
-void GLWidget::renderLights()
-{
-    glUseProgram( m_shaderPrograms[ "lights" ] );
-    for( int i = 0; i < NUM_LIGHTS; i++ )
-    {
-        Transforms sphereTransform = m_transform;
-        sphereTransform.model =
-                glm::translate( glm::vec3( m_lightPositions[ i ].x, m_lightPositions[ i ].y, m_lightPositions[ i ].z ) )
-                * glm::scale( glm::vec3( 0.05f, 0.05f, 0.05f ) )
-                * sphereTransform.model;
-        glUniform3f( glGetUniformLocation( m_shaderPrograms[ "lights" ], "color" ), 1.0f, 1.0f, 1.0f );
-        glUniformMatrix4fv( glGetUniformLocation( m_shaderPrograms[ "lights" ], "mvp" ), 1, GL_FALSE, &sphereTransform.getTransform()[ 0 ][ 0 ] );
-        m_sphere.render();
-    }
-    glUseProgram( 0 );
-}
 
 /**
   Draws a textured quad. The texture must be bound and unbound
@@ -711,44 +505,6 @@ void GLWidget::updateCamera()
     m_transform.view = glm::lookAt( eye, m_camera.center, m_camera.up );
 
     m_camera.eye = eye;
-}
-
-
-/**
-  Creates a gaussian blur kernel with the specified radius.  The kernel values
-  and offsets are stored.
-
-  @param radius: The radius of the kernel to create.
-  @param width: The width of the image.
-  @param height: The height of the image.
-  @param kernel: The array to write the kernel values to.
-  @param offsets: The array to write the offset values to.
-**/
-void GLWidget::createBlurKernel( int radius, int width, int height,
-                                                    GLfloat* kernel, GLfloat* offsets )
-{
-    int size = radius * 2 + 1;
-    float sigma = radius / 3.0f;
-    float twoSigmaSigma = 2.0f * sigma * sigma;
-    float rootSigma = sqrt( twoSigmaSigma * M_PI );
-    float total = 0.0f;
-    float xOff = 1.0f / width, yOff = 1.0f / height;
-    int offsetIndex = 0;
-    for ( int y = -radius, idx = 0; y <= radius; ++y )
-    {
-        for ( int x = -radius; x <= radius; ++x, ++idx )
-        {
-            float d = x * x + y * y;
-            kernel[ idx ] = exp( -d / twoSigmaSigma ) / rootSigma;
-            total += kernel[ idx ];
-            offsets[ offsetIndex++ ] = x * xOff;
-            offsets[ offsetIndex++ ] = y * yOff;
-        }
-    }
-    for ( int i = 0; i < size * size; ++i )
-    {
-        kernel[ i ] /= total;
-    }
 }
 
 /**

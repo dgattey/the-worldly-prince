@@ -1,13 +1,9 @@
 <RCC>
     <qresource prefix="/shaders">
-        <file>lightblur.frag</file>
         <file>phong.frag</file>
         <file>phong.vert</file>
         <file>tex.vert</file>
-        <file>brightpass.frag</file>
         <file>tex.frag</file>
-        <file>lights.frag</file>
-        <file>lights.vert</file>
         <file>star.frag</file>
         <file>star.vert</file>
     </qresource>

@@ -207,8 +207,6 @@ void Cylinder::render()
         int size = 6 * 3 * m_p2 * (6 * m_p1 - 2);
         glDrawArrays(GL_TRIANGLES, 0, size);
         glBindVertexArray(0);
-    } else {
-        printf("Must initialized cylinder before rendering!\n");
     }
 }
 

@@ -72,10 +72,8 @@ protected:
     void paintGL();
     void resizeGL(int width, int height);
 
-
     void createShaderPrograms();
     void createFramebufferObjects(int width, int height);
-    void createBlurKernel(int radius, int width, int height, GLfloat* kernel, GLfloat* offsets);
 
     void wheelEvent(QWheelEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
@@ -84,19 +82,16 @@ protected:
 
     void renderStars();
     void renderShapes();
-    void renderLights();
     void renderTexturedQuad();
-    void renderBlur(int width, int height);
-    void renderBrightPass();
+    void generateFlowers();
+    void initializeParticles();
+
     void renderFinalPass();
     void renderGeometryPass();
+    void renderPlanetPass();
     void renderStarPass();
+
     void paintText();
-
-    void generateFlowers();
-
-    GLuint loadTexture(const QString &path);
-    void initializeParticles();
 
 protected slots:
     void tick();
@@ -109,15 +104,11 @@ private:
     Particle m_particle;
     int m_numParticles;
     ParticleData *m_particleData;
-
     std::list<Flower *> m_flowers;
+
     QTimer m_timer;
     float m_fps;
     float m_increment;
-
-// Feel free to add your own member variables
-
-
     glm::vec2 m_prevMousePos;
     int m_lastUpdate;
     int m_numFrames;
@@ -125,10 +116,8 @@ private:
 
     QFont m_font; // font for rendering text
 
-
     // Resources
     QHash<QString, GLuint> m_shaderPrograms; // hash table for easy access to shaders
-    //QHash<QString, CS123FBO >
 
     glm::vec3 m_lightPositions[NUM_LIGHTS];
     glm::vec3 m_lightIntensities[NUM_LIGHTS];
@@ -140,21 +129,12 @@ private:
     glm::vec3 m_O_d;
     glm::vec3 m_i_a;
 
-//
-// Helpful member variables!
-//
-
-    GLuint m_phongFBO;
-    GLuint m_phongColorAttachment;
-    GLuint m_phongDepthAttachment;
-    GLuint m_brightPassFBO;
-    GLuint m_brightPassColorAttachment;
-    GLuint m_blurFBO;
-    GLuint m_blurColorAttachment;
+    GLuint m_shapeFBO;
+    GLuint m_shapeColorAttachment;
+    GLuint m_shapeDepthAttachment;
 
     GLuint m_starFBO;
     GLuint m_starColorAttachment;
-    GLuint m_starTexture;
 
 };
 

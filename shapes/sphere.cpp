@@ -115,8 +115,6 @@ void Sphere::render()
         int size = 2 * (m_p1 - 2) * m_p2 * 6 * 3;
         glDrawArrays(GL_TRIANGLES, 0, size);
         glBindVertexArray(0);
-    } else {
-        printf("Must initialized sphere before drawing it!\n");
     }
 }
 

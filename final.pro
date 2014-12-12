@@ -57,16 +57,16 @@ RESOURCES += \
     shaders/shaders.qrc
 
 
-#win32:CONFIG(release, debug|release): LIBS += -L/course/cs123/lib/glew/glew-1.10.0/lib/release/ -lGLEW
-#else:win32:CONFIG(debug, debug|release): LIBS += -L/course/cs123/lib/glew/glew-1.10.0/lib/debug/ -lGLEW
-#else:unix: LIBS += -L/course/cs123/lib/glew/glew-1.10.0/lib/ -lGLEW
+win32:CONFIG(release, debug|release): LIBS += -L/course/cs123/lib/glew/glew-1.10.0/lib/release/ -lGLEW
+else:win32:CONFIG(debug, debug|release): LIBS += -L/course/cs123/lib/glew/glew-1.10.0/lib/debug/ -lGLEW
+else:unix: LIBS += -L/course/cs123/lib/glew/glew-1.10.0/lib/ -lGLEW
 
-#INCLUDEPATH += /course/cs123/lib/glew/glew-1.10.0/include
-#DEPENDPATH += /course/cs123/lib/glew/glew-1.10.0/include
+INCLUDEPATH += /course/cs123/lib/glew/glew-1.10.0/include
+DEPENDPATH += /course/cs123/lib/glew/glew-1.10.0/include
 
-DEFINES += GLEW_STATIC
-LIBS += -lglew -lopengl32
+#DEFINES += GLEW_STATIC
+#LIBS += -lglew -lopengl32
 
-#includes are working correctly
-INCLUDEPATH+=C:\Users\Aisha\Documents\cs123\glew-1.11.0\include
-DEPENDPATH+=C:\Users\Aisha\Documents\cs123\glew-1.11.0\include
+##includes are working correctly
+#INCLUDEPATH+=C:\Users\Aisha\Documents\cs123\glew-1.11.0\include
+#DEPENDPATH+=C:\Users\Aisha\Documents\cs123\glew-1.11.0\include
