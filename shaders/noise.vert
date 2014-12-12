@@ -1,8 +1,15 @@
 #version 330 core
 
+in vec3 position;
+in vec3 normal;
+
+uniform mat4x4 projection;
+uniform mat4x4 view;
+uniform mat4x4 model;
+uniform mat4x4 mvp;
+
 out vec2 screenCoord;
 out float noise;
-out float disturbance;
 
 vec3 mod289(vec3 x)
 {
@@ -100,23 +107,23 @@ float pnoise(vec3 P, vec3 rep)
  
 float turbulence( vec3 p ) {
     float w = 100.0;
-    float t = -.5;
-    for (float f = 1.0 ; f <= 10.0 ; f++ ){
-        float power = pow( 2.0, f );
-        t += abs( pnoise( vec3( power * p ), vec3( 10.0, 10.0, 10.0 ) ) / power );
+    float t = -0.5;
+    for (float f = 1.0; f <= 10.0; f++ ){
+        float power = pow(2.0, f);
+        t += abs(pnoise(vec3(power * p), vec3(10.0))/power);
     }
     return t;
 }
  
 void main() {
  
-    screenCoord = uv;
+    screenCoord = gl_Vertex;
  
-    noise = 5.0 *  -0.05 * turbulence(0.75 * normal);
-    disturbance =  pnoise( 0.2 * position, vec3( 100.0 ) );
+    noise = 5.0 *  -0.05 * turbulence(0.74 * normal);
+    float disturbance =  pnoise(0.2 * position, vec3(100.0));
     float displacement = 25.0 * noise + disturbance;
      
     vec3 newPosition = position + normal * displacement;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
+    gl_Position = projection * view * model * vec4(newPosition, 1.0);
  
 }
