@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "CS123Common.h"
+#include <QGLFormat>
 
 namespace Ui {
     class MainWindow;

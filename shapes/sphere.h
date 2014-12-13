@@ -2,7 +2,7 @@
 #define SPHERE_H
 
 #include "shape.h"
-#include "GL/glu.h"
+#include "CS123Common.h"
 #include "glm.hpp"
 
 class Sphere : public Shape

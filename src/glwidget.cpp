@@ -1,3 +1,4 @@
+#include "CS123Common.h"
 #include "glwidget.h"
 #include "settings.h"
 #include <iostream>
@@ -6,15 +7,15 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTime>
+#include <QDebug>
 #include "newmath.h"
-#include "cs123_lib/resourceloader.h"
+#include "resourceloader.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "common.h"
 
 #define VERTSMOON 50
 #define VERTSEARTH 120

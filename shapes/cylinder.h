@@ -23,8 +23,8 @@ private:
     GLfloat *m_vertexBufferData;
     GLuint m_vaoID;
     bool m_isInitialized;
-    int m_p1 = 10;
-    int m_p2 = 10;
+    int m_p1;
+    int m_p2;
 
     void addVertexNormal(glm::vec3 vertex, glm::vec3 normal, int
             *startIndex);

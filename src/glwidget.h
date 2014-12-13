@@ -4,8 +4,8 @@
 #include <QGLWidget>
 #include <QTimer>
 #include "camera.h"
-#include <GL/glu.h>
-#include "cs123_lib/transforms.h"
+#include "CS123Common.h"
+#include "transforms.h"
 #include "texquad.h"
 #include "particle.h"
 #include "flower.h"

@@ -3,11 +3,15 @@
 
 Cylinder::Cylinder()
 {
+    m_p1 = 10;
+    m_p2 = 10;
     m_isInitialized = false;
 }
 
 Cylinder::~Cylinder()
 {
+    m_p1 = 10;
+    m_p2 = 10;
     free(m_vertexBufferData);
 }
 
