@@ -17,7 +17,7 @@
 #include "common.h"
 
 #define VERTSMOON 50
-#define VERTSEARTH 150
+#define VERTSEARTH 120
 
 GLWidget::GLWidget(QWidget *parent)
     : QGLWidget(parent), m_timer(this), m_fps(60.0f), m_increment(0),
@@ -333,8 +333,14 @@ void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
     Transforms sphereTransform = m_transform;
     float time = QTime(0,0).msecsTo(QTime::currentTime());
     GLuint mvp = glGetUniformLocation(m_shaderPrograms["planet"], "mvp");
+    GLuint colorLow = glGetUniformLocation(m_shaderPrograms["planet"], "colorLow");
+    GLuint colorHigh = glGetUniformLocation(m_shaderPrograms["planet"], "colorHigh");
+    GLuint threshold = glGetUniformLocation(m_shaderPrograms["planet"], "threshold");
 
-    // Transform and render the moon - local orbit
+    // Transform and render the moon - local orbit only, and all gray
+    glm::vec4 gray = glm::vec4(0.48, 0.48, 0.5, 0.4);
+    glUniform4fv(colorHigh, 1, &gray[0]);
+    glUniform1f(threshold, -999.0f); // Only show colorHigh
     sphereTransform.model = localizedOrbit *
                             m_transform.model;
     glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
@@ -342,6 +348,11 @@ void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
 
 
     // Transform and render the earth - scale, local orbit, orbit around point
+    glm::vec4 blue = glm::vec4(0.1, 0.1, 0.7, 0.6);
+    glUniform4fv(colorLow, 1, &blue[0]);
+    glm::vec4 green = glm::vec4(0.08, 0.55, 0.25, 0.15);
+    glUniform4fv(colorHigh, 1, &green[0]);
+    glUniform1f(threshold, 1.72f);
     sphereTransform.model = glm::rotate(time/(2*m_fps), glm::vec3(0,0,1)) *
                             glm::translate(glm::vec3(6, -4, 17)) *
                             glm::rotate(-time/m_fps, glm::vec3(1,2,4)) *
