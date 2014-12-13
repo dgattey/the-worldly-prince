@@ -72,6 +72,8 @@ protected:
     void paintGL();
     void resizeGL(int width, int height);
 
+    void refresh();
+
     void createShaderPrograms();
     void createFramebufferObjects(int width, int height);
 
@@ -106,7 +108,14 @@ private:
     Particle m_particle;
     int m_numParticles;
     ParticleData *m_particleData;
+
     std::list<Flower *> m_flowers;
+    Sphere m_flowerSphere;
+    Cylinder m_flowerCylinder;
+
+    bool m_isOrbiting = true;
+    float m_lastTime;
+    float m_elapsedTime;
 
     QTimer m_timer;
     float m_fps;

@@ -67,6 +67,8 @@ GLWidget::GLWidget(QWidget *parent)
 GLWidget::~GLWidget()
 {
     m_flowers.clear();
+    delete &m_flowerSphere;
+    delete &m_flowerCylinder;
     delete[] m_particleData;
 }
 
@@ -85,6 +87,9 @@ void GLWidget::initializeGL()
 
     createShaderPrograms();
     createFramebufferObjects(width(), height());
+
+    // Set up the time for orbit
+    m_lastTime = QTime(0,0).msecsTo(QTime::currentTime());
 
     // Create data
     initializeParticles();
@@ -105,6 +110,12 @@ void GLWidget::initializeGL()
 
     // Load the initial settings
     updateCamera();
+}
+
+void GLWidget::refresh() {
+    delete[] m_particleData;
+    m_flowers.clear();
+    initializeGL();
 }
 
 void GLWidget::initializeParticles() {
@@ -205,13 +216,19 @@ void GLWidget::paintGL()
     m_numFrames++;
     int time = QTime(0,0).msecsTo(QTime::currentTime());
 
+    if (m_isOrbiting) {
+        m_elapsedTime += (time - m_lastTime);
+        printf("elapsed time = %f\n", m_elapsedTime);
+        m_lastTime = time;
+    }
+
     if (time - m_lastUpdate > 1000) {
         m_currentFPS = m_numFrames / (float)((time - m_lastUpdate)/1000.f);
         m_numFrames = 0;
         m_lastUpdate = time;
     }
 
-    glm::mat4x4 localizedOrbit = glm::rotate(time/m_fps, glm::vec3(3,3,1));
+    glm::mat4x4 localizedOrbit = glm::rotate(m_elapsedTime/m_fps, glm::vec3(3,3,1));
 
     renderStarPass();
     renderPlanetPass(localizedOrbit);
@@ -240,7 +257,7 @@ void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-        f->stem.render();
+        m_flowerCylinder.render();
 
         sphereTransform.model = localizedOrbit * f->centerModel;
 
@@ -248,7 +265,7 @@ void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-        f->center.render();
+        m_flowerSphere.render();
 
         for (int i = 0; i < f->petalCount; i++) {
 
@@ -259,7 +276,7 @@ void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-            f->petal.render();
+            m_flowerSphere.render();
         }
     }
 }
@@ -445,31 +462,20 @@ void GLWidget::generateFlowers()
     // how many similar flowers we should surround each flower with
     int gardenSize = 15;
 
+    m_flowerCylinder.init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                 glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
+    m_flowerSphere.init(5, 5,
+                   glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                   glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
+
     for (int i = 0; i < flowerVariety; i++) {
     	// our template flower
         Flower *f = new Flower();
-        f->stem.init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
-                     glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-        f->center.init(5, 5,
-                       glGetAttribLocation(m_shaderPrograms["flower"], "position"),
-                       glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-        f->petal.init(5,5,
-                      glGetAttribLocation(m_shaderPrograms["flower"], "position"),
-                      glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
         m_flowers.push_back(f);
 
         // other similar flowers
         for (int j = 0; j < gardenSize; j++) {
-            Flower *next = new Flower(f);
-            next->stem.init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
-                            glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-            next->center.init(5, 5,
-                           glGetAttribLocation(m_shaderPrograms["flower"], "position"),
-                           glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-            next->petal.init(5,5,
-                             glGetAttribLocation(m_shaderPrograms["flower"], "position"),
-                             glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-            m_flowers.push_back(next);
+            m_flowers.push_back(new Flower(f));
         }
     }
 }
@@ -537,6 +543,8 @@ void GLWidget::paintText()
 
     // QGLWidget's renderText takes xy coordinates, a string, and a font
     renderText(10, 20, "FPS: " + QString::number((int) (m_currentFPS + .5f)), m_font);
+    renderText(10, 40, "(Space): Pause", m_font);
+    renderText(10, 60, "R: Refresh", m_font);
 }
 
 
@@ -559,11 +567,27 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     switch(event->key())
     {
         case Qt::Key_S:
-        QImage qi = grabFrameBuffer(false);
-        QString filter;
-        QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "", tr("PNG Image (*.png)"), &filter);
-        qi.save(QFileInfo(fileName).absoluteDir().absolutePath() + "/" + QFileInfo(fileName).baseName() + ".png", "PNG", 100);
-        break;
+            {
+            QImage qi = grabFrameBuffer(false);
+            QString filter;
+            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "", tr("PNG Image (*.png)"), &filter);
+            qi.save(QFileInfo(fileName).absoluteDir().absolutePath() + "/" + QFileInfo(fileName).baseName() + ".png", "PNG", 100);
+            break;
+            }
+        case Qt::Key_R:
+            {
+            refresh();
+            break;
+            }
+        case Qt::Key_Space:
+            {
+            if (!m_isOrbiting) {
+                printf("wasn't orbiting, starting now\n");
+                m_lastTime = QTime(0,0).msecsTo(QTime::currentTime());
+            }
+            m_isOrbiting = !m_isOrbiting;
+            break;
+            }
     }
 }
 
