@@ -236,7 +236,6 @@ void GLWidget::paintGL()
     renderFlowerPass(localizedOrbit);
     renderFinalPass();
 
-    // TODO: Take out paint fps info
     paintText();
 
     updateCamera();
@@ -283,6 +282,7 @@ void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
 }
 
 void GLWidget::renderStars() {
+    glm::mat4x4 atmosphericRotation = glm::rotate(m_elapsedTime/(25.0f*m_fps), glm::vec3(7,1,8));
     for(int i =0; i<m_numParticles; i++) {
 
         Transforms particleTransform = m_transform;
@@ -295,42 +295,56 @@ void GLWidget::renderStars() {
         glm::vec3 np = glm::normalize(glm::vec3(-x1,-y1,-z1));
 
         glm::vec3 view = glm::normalize(m_camera.eye);
-        if (glm::dot(view, np) > 0) { // Backface Culling!!!!!!
+        if (glm::dot(view, glm::vec3(atmosphericRotation * glm::vec4(np, 1.f))) > 0) { // Backface Culling!!!!!!
 
             glm::vec3 axis = glm::cross(n, np);
             float angle = glm::acos(glm::dot(n, np) / (glm::length(glm::vec4(n,0.0f)) * glm::length(glm::vec4(np,0.0f))));
 
-            particleTransform.model = glm::translate(glm::vec3(x1,y1,z1)) * glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
-                    glm::rotate(angle*360.0f/6.28f, axis) * particleTransform.model;
+            particleTransform.model =
+                    atmosphericRotation *
+                    glm::translate(glm::vec3(x1,y1,z1)) *
+                    glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
+                    glm::rotate(angle*360.0f/6.28f, axis) *
+                    particleTransform.model;
 
             float pulse = 1.0f;// cos((int)m_particleData[i].life % 6);
 
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "mvp"), 1, GL_FALSE, &particleTransform.getTransform()[0][0]);
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "m"), 1, GL_FALSE, &particleTransform.model[0][0]);
             glUniform4f(glGetUniformLocation(m_shaderPrograms["star"], "color"),
-                    pulse*m_particleData[i].color.x, pulse*m_particleData[i].color.y, pulse*m_particleData[i].color.z, m_particleData[i].life / 150.0f);
+                    pulse*m_particleData[i].color.x,
+                    pulse*m_particleData[i].color.y,
+                    pulse*m_particleData[i].color.z,
+                    m_particleData[i].life / 150.0f);
 
             m_particle.draw();
 
             // Give shooting stars their tail
             if (glm::length(glm::vec4(m_particleData[i].dir,0.0f)) > 0) {
                 for (int dt = 0; dt <= 8; dt++) {
-//                    for (int p = 0; p < 1; p++) {
-                        float coeff = 0.5f;
-                        glm::vec3 newPos = glm::vec3(m_particleData[i].pos.x - coeff*dt*m_particleData[i].dir.x /*- urand(-2.5f,2.5f)*/,
-                                                     m_particleData[i].pos.y - coeff*dt*m_particleData[i].dir.y /*- urand(-2.5f,2.5f)*/,
-                                                     m_particleData[i].pos.z - coeff*dt*m_particleData[i].dir.z /*- urand(-2.5f,2.5f)*/);
-                        Transforms temp = m_transform;
-                        temp.model = glm::translate(newPos) * glm::rotate(angle*360.0f/6.28f, axis) * glm::scale(glm::vec3(1.0f + 1.0f/((float)dt))) * temp.model;
-                        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "mvp"), 1, GL_FALSE, &temp.getTransform()[0][0]);
-                        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "m"), 1, GL_FALSE, &temp.model[0][0]);
-                        glUniform4f(glGetUniformLocation(m_shaderPrograms["star"], "color"),
-                                (1.0f/((float)dt))*m_particleData[i].color.x, (1.0f/((float)dt))*m_particleData[i].color.y, (1.0f/((float)dt))*m_particleData[i].color.z, m_particleData[i].life / 150.0f);
-                        m_particle.draw();
-//                    }
+                    float coeff = 0.5f;
+                    glm::vec3 newPos = glm::vec3(m_particleData[i].pos.x - coeff*dt*m_particleData[i].dir.x /*- urand(-2.5f,2.5f)*/,
+                                                 m_particleData[i].pos.y - coeff*dt*m_particleData[i].dir.y /*- urand(-2.5f,2.5f)*/,
+                                                 m_particleData[i].pos.z - coeff*dt*m_particleData[i].dir.z /*- urand(-2.5f,2.5f)*/);
+                    Transforms temp = m_transform;
+                    temp.model =
+                            atmosphericRotation *
+                            glm::translate(newPos) *
+                            glm::rotate(angle*360.0f/6.28f, axis) *
+                            glm::scale(glm::vec3(1.0f + 1.0f/((float)dt))) *
+                            temp.model;
+                    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "mvp"), 1, GL_FALSE, &temp.getTransform()[0][0]);
+                    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "m"), 1, GL_FALSE, &temp.model[0][0]);
+                    glUniform4f(glGetUniformLocation(m_shaderPrograms["star"], "color"),
+                            (1.0f/((float)dt))*m_particleData[i].color.x,
+                            (1.0f/((float)dt))*m_particleData[i].color.y,
+                            (1.0f/((float)dt))*m_particleData[i].color.z,
+                            m_particleData[i].life / 150.0f);
+                    m_particle.draw();
                 }
             }
         }
+        if (!m_isOrbiting) continue;
 
         m_particleData[i].pos = m_particleData[i].pos + m_particleData[i].dir;
         m_particleData[i].life += 1.0f*m_particleData[i].decay;
@@ -349,7 +363,6 @@ void GLWidget::renderStars() {
 
 void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
     Transforms sphereTransform = m_transform;
-    float time = QTime(0,0).msecsTo(QTime::currentTime());
     glUniform1f(glGetUniformLocation(m_shaderPrograms["planet"], "seed"), m_shaderSeed);
     GLuint mvp = glGetUniformLocation(m_shaderPrograms["planet"], "mvp");
     GLuint colorLow = glGetUniformLocation(m_shaderPrograms["planet"], "colorLow");
@@ -372,9 +385,9 @@ void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
     glm::vec4 green = glm::vec4(0.08, 0.55, 0.25, 0.15);
     glUniform4fv(colorHigh, 1, &green[0]);
     glUniform1f(threshold, 1.72f);
-    sphereTransform.model = glm::rotate(time/(2*m_fps), glm::vec3(0,0,1)) *
+    sphereTransform.model = glm::rotate(m_elapsedTime/(2*m_fps), glm::vec3(0,0,1)) *
                             glm::translate(glm::vec3(6, -4, 17)) *
-                            glm::rotate(-time/m_fps, glm::vec3(1,2,4)) *
+                            glm::rotate(-m_elapsedTime/m_fps, glm::vec3(1,2,4)) *
                             glm::scale(glm::vec3(3.3f)) *
                             m_transform.model;
     glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
