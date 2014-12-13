@@ -81,15 +81,15 @@ protected:
     void keyPressEvent(QKeyEvent *event);
 
     void renderStars();
-    void renderFlowers();
-    void renderPlanet();
+    void renderFlowers(glm::mat4x4 localizedOrbit);
+    void renderPlanet(glm::mat4x4 localizedOrbit);
     void renderTexturedQuad();
     void generateFlowers();
     void initializeParticles();
 
     void renderFinalPass();
-    void renderFlowerPass();
-    void renderPlanetPass();
+    void renderFlowerPass(glm::mat4x4 localizedOrbit);
+    void renderPlanetPass(glm::mat4x4 localizedOrbit);
     void renderStarPass();
 
     void paintText();
@@ -100,7 +100,8 @@ protected slots:
 private:
     LabCamera m_camera;
     Transforms m_transform;
-    Sphere m_sphere;
+    Sphere m_moon;
+    Sphere m_earth;
     TexQuad m_texquad;
     Particle m_particle;
     int m_numParticles;

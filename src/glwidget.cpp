@@ -16,7 +16,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "common.h"
 
-#define VERTSPLANET 150
+#define VERTSMOON 50
+#define VERTSEARTH 150
 
 GLWidget::GLWidget(QWidget *parent)
     : QGLWidget(parent), m_timer(this), m_fps(60.0f), m_increment(0),
@@ -29,7 +30,7 @@ GLWidget::GLWidget(QWidget *parent)
     // set up camera
     m_camera.center = glm::vec3(0.f, 0.f, 0.f);
     m_camera.up = glm::vec3(0.f, 1.f, 0.f);
-    m_camera.zoom = 3.5f;
+    m_camera.zoom = 3.0f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
 
@@ -141,7 +142,10 @@ void GLWidget::createShaderPrograms()
     m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/flower.vert", ":/shaders/flower.frag");
 
     m_shaderPrograms["planet"] = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
-    m_sphere.init(VERTSPLANET, VERTSPLANET,
+    m_moon.init(VERTSMOON, VERTSMOON,
+                  glGetAttribLocation(m_shaderPrograms["planet"], "position"),
+                  glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
+    m_earth.init(VERTSEARTH, VERTSEARTH,
                   glGetAttribLocation(m_shaderPrograms["planet"], "position"),
                   glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
 
@@ -207,9 +211,11 @@ void GLWidget::paintGL()
         m_lastUpdate = time;
     }
 
+    glm::mat4x4 localizedOrbit = glm::rotate(time/m_fps, glm::vec3(3,3,1));
+
     renderStarPass();
-    renderPlanetPass();
-    renderFlowerPass();
+    renderPlanetPass(localizedOrbit);
+    renderFlowerPass(localizedOrbit);
     renderFinalPass();
 
     // TODO: Take out paint fps info
@@ -219,20 +225,16 @@ void GLWidget::paintGL()
 }
 
 
-void GLWidget::renderFlowers()
+void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
 {
     Transforms sphereTransform = m_transform;
+
 
     // iterate through each of the flowers and render the components
     for (std::list<Flower *>::const_iterator iterator = m_flowers.begin(), end = m_flowers.end(); iterator != end; ++iterator) {
         Flower *f = *iterator;
 
-        // Flower is behind the planet!
-        if (!f->isVisible(m_camera.eye)) {
-            continue;
-        }
-
-        sphereTransform.model = f->cylModel;
+        sphereTransform.model = localizedOrbit * f->cylModel;
 
         glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "color"), 1, glm::value_ptr(glm::vec3(0, 0.5, 0)));
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
@@ -240,7 +242,7 @@ void GLWidget::renderFlowers()
 
         f->stem.render();
 
-        sphereTransform.model = f->centerModel;
+        sphereTransform.model = localizedOrbit * f->centerModel;
 
         glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "color"), 1, glm::value_ptr(f->centerColor));
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
@@ -250,7 +252,7 @@ void GLWidget::renderFlowers()
 
         for (int i = 0; i < f->petalCount; i++) {
 
-            sphereTransform.model = f->petalModels[i];
+            sphereTransform.model = localizedOrbit * f->petalModels[i];
 
             // hard code some of the colors
             glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "color"), 1, glm::value_ptr(f->petalColor));
@@ -327,14 +329,26 @@ void GLWidget::renderStars() {
 
 }
 
-void GLWidget::renderPlanet() {
+void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
     Transforms sphereTransform = m_transform;
+    float time = QTime(0,0).msecsTo(QTime::currentTime());
+    GLuint mvp = glGetUniformLocation(m_shaderPrograms["planet"], "mvp");
 
-    // Set the necessary uniforms
-    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["planet"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+    // Transform and render the moon - local orbit
+    sphereTransform.model = localizedOrbit *
+                            m_transform.model;
+    glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+    m_moon.render();
 
-    // Render it
-    m_sphere.render();
+
+    // Transform and render the earth - scale, local orbit, orbit around point
+    sphereTransform.model = glm::rotate(time/(2*m_fps), glm::vec3(0,0,1)) *
+                            glm::translate(glm::vec3(6, -4, 17)) *
+                            glm::rotate(-time/m_fps, glm::vec3(1,2,4)) *
+                            glm::scale(glm::vec3(3.3f)) *
+                            m_transform.model;
+    glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+    m_earth.render();
 }
 
 void GLWidget::renderStarPass()
@@ -362,7 +376,7 @@ void GLWidget::renderStarPass()
     glUseProgram(0);
 }
 
-void GLWidget::renderFlowerPass()
+void GLWidget::renderFlowerPass(glm::mat4x4 localizedOrbit)
 {
     glUseProgram(m_shaderPrograms["flower"]);
     glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
@@ -370,7 +384,7 @@ void GLWidget::renderFlowerPass()
     glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
 
     // Draw shapes with depth and no blending
-    renderFlowers();
+    renderFlowers(localizedOrbit);
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -378,7 +392,7 @@ void GLWidget::renderFlowerPass()
     glUseProgram(0);
 }
 
-void GLWidget::renderPlanetPass()
+void GLWidget::renderPlanetPass(glm::mat4x4 localizedOrbit)
 {
     glUseProgram(m_shaderPrograms["planet"]);
     glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
@@ -388,7 +402,7 @@ void GLWidget::renderPlanetPass()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw the planet with depth and no blending
-    renderPlanet();
+    renderPlanet(localizedOrbit);
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -503,7 +517,6 @@ void GLWidget::updateCamera()
 {
     float w = width();
     float h = height();
-    float aspectRatio = 1.0f * w / h;
 
     float ratio = 1.0f * w / h;
     glm::vec3 dir(-fromAnglesN(m_camera.theta, m_camera.phi));
@@ -524,7 +537,6 @@ void GLWidget::paintText()
 
     // QGLWidget's renderText takes xy coordinates, a string, and a font
     renderText(10, 20, "FPS: " + QString::number((int) (m_currentFPS + .5f)), m_font);
-    renderText(10, 35, "S: Save screenshot", m_font);
 }
 
 
