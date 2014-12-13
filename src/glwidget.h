@@ -84,15 +84,15 @@ protected:
 
     void renderStars();
     void renderFlowers(glm::mat4x4 localizedOrbit);
-    void renderPlanet(glm::mat4x4 localizedOrbit);
+    void renderPlanets(glm::mat4x4 localizedOrbit);
     void renderTexturedQuad();
     void generateFlowers();
     void initializeParticles();
 
     void renderFinalPass();
-    void renderFlowerPass(glm::mat4x4 localizedOrbit);
-    void renderPlanetPass(glm::mat4x4 localizedOrbit);
-    void renderStarPass();
+    void renderFlowersPass(glm::mat4x4 localizedOrbit);
+    void renderPlanetsPass(glm::mat4x4 localizedOrbit);
+    void renderStarsPass();
 
     void paintText();
 
@@ -104,6 +104,7 @@ private:
     Transforms m_transform;
     Sphere m_moon;
     Sphere m_earth;
+    Sphere m_mars;
     TexQuad m_texquad;
     Particle m_particle;
     int m_numParticles;
@@ -113,7 +114,7 @@ private:
     Sphere *m_flowerSphere;
     Cylinder *m_flowerCylinder;
 
-    bool m_isOrbiting = true;
+    bool m_isOrbiting;
     float m_lastTime;
     float m_elapsedTime;
 

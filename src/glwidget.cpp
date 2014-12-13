@@ -33,6 +33,7 @@ GLWidget::GLWidget(QWidget *parent)
     m_camera.zoom = 3.0f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
+    m_isOrbiting = true; // rotations
 
     // Set up 60 FPS draw loop
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -161,6 +162,9 @@ void GLWidget::createShaderPrograms()
     m_earth.init(VERTSEARTH, VERTSEARTH,
                   glGetAttribLocation(m_shaderPrograms["planet"], "position"),
                   glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
+    m_mars.init(VERTSEARTH, VERTSEARTH,
+                  glGetAttribLocation(m_shaderPrograms["planet"], "position"),
+                  glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
 
     m_shaderPrograms["tex"] = ResourceLoader::loadShaders(":/shaders/tex.vert", ":/shaders/tex.frag");
     m_texquad.init(glGetAttribLocation(m_shaderPrograms["tex"], "position"),
@@ -229,11 +233,11 @@ void GLWidget::paintGL()
         m_lastUpdate = time;
     }
 
-    glm::mat4x4 localizedOrbit = glm::rotate(m_elapsedTime/m_fps, glm::vec3(3,3,1));
+    glm::mat4x4 localizedOrbit = glm::rotate(m_elapsedTime/(2*m_fps), glm::vec3(3,3,1));
 
-    renderStarPass();
-    renderPlanetPass(localizedOrbit);
-    renderFlowerPass(localizedOrbit);
+    renderStarsPass();
+    renderPlanetsPass(localizedOrbit);
+    renderFlowersPass(localizedOrbit);
     renderFinalPass();
 
     paintText();
@@ -245,7 +249,6 @@ void GLWidget::paintGL()
 void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
 {
     Transforms sphereTransform = m_transform;
-
 
     // iterate through each of the flowers and render the components
     for (std::list<Flower *>::const_iterator iterator = m_flowers.begin(), end = m_flowers.end(); iterator != end; ++iterator) {
@@ -361,7 +364,7 @@ void GLWidget::renderStars() {
 
 }
 
-void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
+void GLWidget::renderPlanets(glm::mat4x4 localizedOrbit) {
     Transforms sphereTransform = m_transform;
     glUniform1f(glGetUniformLocation(m_shaderPrograms["planet"], "seed"), m_shaderSeed);
     GLuint mvp = glGetUniformLocation(m_shaderPrograms["planet"], "mvp");
@@ -369,7 +372,7 @@ void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
     GLuint colorHigh = glGetUniformLocation(m_shaderPrograms["planet"], "colorHigh");
     GLuint threshold = glGetUniformLocation(m_shaderPrograms["planet"], "threshold");
 
-    // Transform and render the moon - local orbit only, and all gray
+    // Moon - local orbit only, and all gray
     glm::vec4 gray = glm::vec4(0.48, 0.48, 0.5, 0.4);
     glUniform4fv(colorHigh, 1, &gray[0]);
     glUniform1f(threshold, -999.0f); // Only show colorHigh
@@ -379,22 +382,36 @@ void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
     m_moon.render();
 
 
-    // Transform and render the earth - scale, local orbit, orbit around point
+    // Earth - scale, local orbit, orbit around point, blue and green
     glm::vec4 blue = glm::vec4(0.1, 0.1, 0.7, 0.6);
     glUniform4fv(colorLow, 1, &blue[0]);
     glm::vec4 green = glm::vec4(0.08, 0.55, 0.25, 0.15);
     glUniform4fv(colorHigh, 1, &green[0]);
     glUniform1f(threshold, 1.72f);
-    sphereTransform.model = glm::rotate(m_elapsedTime/(2*m_fps), glm::vec3(0,0,1)) *
-                            glm::translate(glm::vec3(6, -4, 17)) *
-                            glm::rotate(-m_elapsedTime/m_fps, glm::vec3(1,2,4)) *
+    sphereTransform.model = glm::rotate(m_elapsedTime/(4*m_fps), glm::vec3(0,1,0)) *
+                            glm::translate(glm::vec3(7, 0, 17)) *
+                            glm::rotate(-m_elapsedTime/(2*m_fps), glm::vec3(1,2,4)) *
                             glm::scale(glm::vec3(3.3f)) *
                             m_transform.model;
     glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
     m_earth.render();
+
+    // Mars - scale, local orbit, orbit around point, red and maroon
+    glm::vec4 red = glm::vec4(0.6, 0.25, 0.15, 0.4);
+    glUniform4fv(colorLow, 1, &red[0]);
+    glm::vec4 maroon = glm::vec4(0.5, 0.3, 0.3, 0.35);
+    glUniform4fv(colorHigh, 1, &maroon[0]);
+    glUniform1f(threshold, 1.32f);
+    sphereTransform.model = glm::rotate(m_elapsedTime/(3.6f*m_fps), glm::vec3(0,1,0)) *
+                            glm::translate(glm::vec3(-40, 0, 20)) *
+                            glm::rotate(-m_elapsedTime/(2*m_fps), glm::vec3(0,3,1)) *
+                            glm::scale(glm::vec3(3.6f)) *
+                            m_transform.model;
+    glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+    m_mars.render();
 }
 
-void GLWidget::renderStarPass()
+void GLWidget::renderStarsPass()
 {
     glUseProgram(m_shaderPrograms["star"]);
     glBindFramebuffer(GL_FRAMEBUFFER, m_starFBO);
@@ -419,7 +436,7 @@ void GLWidget::renderStarPass()
     glUseProgram(0);
 }
 
-void GLWidget::renderFlowerPass(glm::mat4x4 localizedOrbit)
+void GLWidget::renderFlowersPass(glm::mat4x4 localizedOrbit)
 {
     glUseProgram(m_shaderPrograms["flower"]);
     glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
@@ -435,7 +452,7 @@ void GLWidget::renderFlowerPass(glm::mat4x4 localizedOrbit)
     glUseProgram(0);
 }
 
-void GLWidget::renderPlanetPass(glm::mat4x4 localizedOrbit)
+void GLWidget::renderPlanetsPass(glm::mat4x4 localizedOrbit)
 {
     glUseProgram(m_shaderPrograms["planet"]);
     glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
@@ -445,7 +462,7 @@ void GLWidget::renderPlanetPass(glm::mat4x4 localizedOrbit)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw the planet with depth and no blending
-    renderPlanet(localizedOrbit);
+    renderPlanets(localizedOrbit);
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
