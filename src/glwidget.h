@@ -130,9 +130,6 @@ private:
     glm::vec3 m_O_d;
     glm::vec3 m_i_a;
 
-    GLuint m_flowerFBO;
-    GLuint m_flowerColorAttachment;
-
     GLuint m_planetFBO;
     GLuint m_planetColorAttachment;
 

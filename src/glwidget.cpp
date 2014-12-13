@@ -6,9 +6,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTime>
-
 #include "newmath.h"
-
 #include "cs123_lib/resourceloader.h"
 
 #include <glm/glm.hpp>
@@ -18,8 +16,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "common.h"
 
-#include <QGLFramebufferObject>
-#include <glm/gtx/rotate_vector.hpp>
+#define VERTSPLANET 150
 
 GLWidget::GLWidget(QWidget *parent)
     : QGLWidget(parent), m_timer(this), m_fps(60.0f), m_increment(0),
@@ -143,7 +140,7 @@ void GLWidget::createShaderPrograms()
     m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/phong.vert", ":/shaders/phong.frag");
 
     m_shaderPrograms["planet"] = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
-    m_sphere.init(70, 70,
+    m_sphere.init(VERTSPLANET, VERTSPLANET,
                   glGetAttribLocation(m_shaderPrograms["planet"], "position"),
                   glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
 
@@ -192,24 +189,6 @@ void GLWidget::createFramebufferObjects(int width, int height)
     glBindRenderbuffer(GL_RENDERBUFFER, planetDepth);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, planetDepth);
-
-    // Creates the flower FBO and texture
-    glGenFramebuffers(1, &m_flowerFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_flowerFBO);
-    glActiveTexture(GL_TEXTURE2); // Texture 2 is for flowers
-    glGenTextures(1, &m_flowerColorAttachment);
-    glBindTexture(GL_TEXTURE_2D, m_flowerColorAttachment);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_flowerColorAttachment, 0);
-
-    // Needed to do depth on flowers
-    GLuint flowerDepth;
-    glGenRenderbuffers(1, &flowerDepth);
-    glBindRenderbuffer(GL_RENDERBUFFER, flowerDepth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, flowerDepth);
 
     // Clear
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -389,11 +368,9 @@ void GLWidget::renderStarPass()
 void GLWidget::renderFlowerPass()
 {
     glUseProgram(m_shaderPrograms["flower"]);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_flowerFBO);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_flowerColorAttachment);
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
 
     // Draw shapes with depth and no blending
     renderFlowers();
@@ -432,19 +409,14 @@ void GLWidget::renderFinalPass()
     glUseProgram(m_shaderPrograms["tex"]);
     glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "starTex"), 0);
     glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "planetTex"), 1);
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "flowerTex"), 2);
 
     // Draw composed stars
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
 
-    // Draw composed planet
+    // Draw composed planet and flowers
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
-
-    // Draw composed flowers
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_flowerColorAttachment);
     renderTexturedQuad();
 
     // Clear

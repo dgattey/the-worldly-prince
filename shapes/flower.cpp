@@ -74,7 +74,7 @@ Flower::~Flower()
 bool Flower::isVisible(glm::vec3 cameraEye) {
     glm::vec4 flowerPos = cylModel * glm::vec4(0.f, 0.f, 0.f, 1.f);
     float dot = glm::dot(glm::normalize(cameraEye), glm::normalize(glm::vec3(flowerPos)));
-    if (dot > 0) {
+    if (dot > -0.1) {
         return true;
     }
     return false;
