@@ -1,0 +1,40 @@
+The Little Prince
+
+How to use the program:
+Build it in Qt Creator. There are instructions for user interaction in the app
+but to summarize, arrow keys control speed, space pauses the simulation, and r
+refreshes the particles and flower placement. The user can interact with the
+scene by scrolling to zoom and clicking and dragging to rotate about the origin.
+
+Design Details:
+Flowers are created by composing primitives (spheres and cylinders). Their 
+implementation is contained in shapes/*. Flowers are the implementation of procedural
+generation, since they form in groups arranged closer to other members of their
+color/shape on the planet. Star/comet particles are formed in particle.cpp 
+and composed in glwidget.cpp. All planet rendering is done in noise.frag and 
+noise.vert, with the vertices passed in originating in the sphere class. Planets
+are fractal (Perlin) noise generation. All OpenGL related functionality (textures, 
+FBOs, shader linking, and rendering) is contained within one class for simplicity, 
+glwidget.cpp.
+
+When running the app, glwidget first initializes the particles and flowers (also
+happens when user resets the scene). It sets up the two FBOs, one for stars, and
+the other for all three planets and the flowers. The second has depth enabled to 
+compose the 3D scene, but the first doesn't. When rendering, there are two 
+textures created, one for each FBO, and the tex shader composes them together. 
+To render the particles, the cloud around the origin is drawn with a shader to
+enable twinkling. To render the flowers, they're simply drawn with GL_DRAW* to 
+the appropriate FBO. Rendering the planets happens by passing all three sphere
+vertices (transformed) to the noise shader along with intended colors and 
+thresholds. Based on Perlin noise in 11 octaves, it displaces the vertices and
+colors them based on a height threshold. Again, it ends up in the same FBO as 
+the flowers. 
+
+Bugs/issues:
+No bugs, no memory leaks.
+
+Thanks for a great semester!! We had a ton of fun with this final and thanks
+for your help
+
+- Charlie, Aisha, and Dylan
+

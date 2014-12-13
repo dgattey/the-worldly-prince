@@ -35,11 +35,11 @@ vec3 fade(vec3 t) {
 // Classic Perlin
 float pnoise(vec3 P, vec3 rep)
 {
-  vec3 Pi0 = mod(floor(P), rep); // Integer part, modulo period
-  vec3 Pi1 = mod(Pi0 + vec3(1.0), rep); // Integer part + 1, mod period
+  vec3 Pi0 = mod(floor(P), rep); // Integer part, modded period
+  vec3 Pi1 = mod(Pi0 + vec3(1.0), rep); // Integer part + 1, modded period
   Pi0 = mod289(Pi0);
   Pi1 = mod289(Pi1);
-  vec3 Pf0 = fract(P); // Fractional part for interpolation
+  vec3 Pf0 = fract(P); // Fractional - interpolation
   vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
   vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
   vec4 iy = vec4(Pi0.yy, Pi1.yy);

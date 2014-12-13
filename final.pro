@@ -16,7 +16,6 @@ SOURCES += src/settings.cpp \
     cs123_lib/resourceloader.cpp \
     src/camera.cpp \
     texquad.cpp \
-    particleemitter.cpp \
     particle.cpp \
     shapes/shape.cpp \
     shapes/sphere.cpp \

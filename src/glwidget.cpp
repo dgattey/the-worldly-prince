@@ -591,9 +591,9 @@ void GLWidget::paintText()
 
     // QGLWidget's renderText takes xy coordinates, a string, and a font
     renderText(10, 20, "FPS: " + QString::number((int) (m_currentFPS + .5f)), m_font);
-    renderText(10, 50, "Space: Pause Rotation", m_font);
+    renderText(10, 50, "Space: Pause", m_font);
     renderText(10, 70, "R: Random Refresh", m_font);
-    renderText(10, 90, "Arrows: Rotation Speed", m_font);
+    renderText(10, 90, "Arrows: Change Speed", m_font);
     renderText(10, 110, "H: Hide Text", m_font);
 }
 
