@@ -69,8 +69,8 @@ GLWidget::GLWidget(QWidget *parent)
 GLWidget::~GLWidget()
 {
     m_flowers.clear();
-    delete &m_flowerSphere;
-    delete &m_flowerCylinder;
+    delete m_flowerSphere;
+    delete m_flowerCylinder;
     delete[] m_particleData;
 }
 
@@ -220,7 +220,6 @@ void GLWidget::paintGL()
 
     if (m_isOrbiting) {
         m_elapsedTime += (time - m_lastTime);
-        printf("elapsed time = %f\n", m_elapsedTime);
         m_lastTime = time;
     }
 
@@ -259,7 +258,7 @@ void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-        m_flowerCylinder.render();
+        m_flowerCylinder->render();
 
         sphereTransform.model = localizedOrbit * f->centerModel;
 
@@ -267,7 +266,7 @@ void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-        m_flowerSphere.render();
+        m_flowerSphere->render();
 
         for (int i = 0; i < f->petalCount; i++) {
 
@@ -278,7 +277,7 @@ void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-            m_flowerSphere.render();
+            m_flowerSphere->render();
         }
     }
 }
@@ -476,9 +475,11 @@ void GLWidget::generateFlowers()
     // how many similar flowers we should surround each flower with
     int gardenSize = 15;
 
-    m_flowerCylinder.init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+    m_flowerCylinder = new Cylinder();
+    m_flowerCylinder->init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
                  glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-    m_flowerSphere.init(5, 5,
+    m_flowerSphere = new Sphere();
+    m_flowerSphere->init(5, 5,
                    glGetAttribLocation(m_shaderPrograms["flower"], "position"),
                    glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
 
@@ -596,7 +597,6 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         case Qt::Key_Space:
             {
             if (!m_isOrbiting) {
-                printf("wasn't orbiting, starting now\n");
                 m_lastTime = QTime(0,0).msecsTo(QTime::currentTime());
             }
             m_isOrbiting = !m_isOrbiting;

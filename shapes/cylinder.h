@@ -10,9 +10,6 @@ public:
     // uninitialized cylinder
     Cylinder();
 
-    // initialized cylinder
-    Cylinder(const GLuint position, const GLuint normal);
-
     ~Cylinder();
 
     void init(const GLuint position, const GLuint normal);

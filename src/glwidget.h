@@ -110,8 +110,8 @@ private:
     ParticleData *m_particleData;
 
     std::list<Flower *> m_flowers;
-    Sphere m_flowerSphere;
-    Cylinder m_flowerCylinder;
+    Sphere *m_flowerSphere;
+    Cylinder *m_flowerCylinder;
 
     bool m_isOrbiting = true;
     float m_lastTime;

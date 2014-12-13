@@ -6,11 +6,6 @@ Cylinder::Cylinder()
     m_isInitialized = false;
 }
 
-Cylinder::Cylinder(const GLuint position, const GLuint normal)
-{
-    init(position, normal);
-}
-
 Cylinder::~Cylinder()
 {
     free(m_vertexBufferData);
