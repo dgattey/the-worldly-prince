@@ -24,7 +24,7 @@ public:
     glm::vec3 centerColor;
 
     int petalCount;
-    Sphere *petals;
+    Sphere petal;
     glm::mat4x4 *petalModels;
     glm::vec3 petalColor;
 

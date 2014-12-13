@@ -65,7 +65,8 @@ GLWidget::GLWidget(QWidget *parent)
 
 GLWidget::~GLWidget()
 {
-
+    m_flowers.clear();
+    delete[] m_particleData;
 }
 
 void GLWidget::initializeGL()
@@ -256,7 +257,7 @@ void GLWidget::renderFlowers()
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
-            f->petals[i].render();
+            f->petal.render();
         }
     }
 }
@@ -438,11 +439,9 @@ void GLWidget::generateFlowers()
         f->center.init(5, 5,
                        glGetAttribLocation(m_shaderPrograms["flower"], "position"),
                        glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-        for (int j = 0; j < f->petalCount; j++) {
-            f->petals[j].init(5,5,
-                              glGetAttribLocation(m_shaderPrograms["flower"], "position"),
-                              glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-        }
+        f->petal.init(5,5,
+                      glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                      glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
         m_flowers.push_back(f);
 
         // other similar flowers
@@ -453,11 +452,9 @@ void GLWidget::generateFlowers()
             next->center.init(5, 5,
                            glGetAttribLocation(m_shaderPrograms["flower"], "position"),
                            glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-            for (int j = 0; j < next->petalCount; j++) {
-                next->petals[j].init(5,5,
-                                     glGetAttribLocation(m_shaderPrograms["flower"], "position"),
-                                     glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
-            }
+            next->petal.init(5,5,
+                             glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                             glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
             m_flowers.push_back(next);
         }
     }

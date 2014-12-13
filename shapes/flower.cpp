@@ -42,7 +42,6 @@ Flower::Flower()
 
     centerColor = glm::vec3(1.f, 0.5f + ((float)rand()) / (2.f * RAND_MAX), 0.f);
     petalCount = rand() % 4 + 5;
-    petals = new Sphere[petalCount];
     petalModels = new glm::mat4x4[petalCount];
     petalColor = glm::vec3((float)rand() / ((float)RAND_MAX),
                            (float)rand() / ((float)RAND_MAX),
@@ -80,7 +79,6 @@ Flower::Flower(Flower *around)
     cylModel = arbitraryRotation * around->cylModel;
     centerModel = arbitraryRotation * around->centerModel;
     centerColor = around->centerColor;
-    petals = new Sphere[petalCount];
     petalModels = new glm::mat4x4[petalCount];
     petalColor = around->petalColor;
     for (int j = 0; j < petalCount; j++) {
@@ -90,8 +88,11 @@ Flower::Flower(Flower *around)
 
 Flower::~Flower()
 {
-    delete[] petals;
     delete[] petalModels;
+
+    delete &petal;
+    delete &center;
+    delete &stem;
 }
 
 bool Flower::isVisible(glm::vec3 cameraEye) {
