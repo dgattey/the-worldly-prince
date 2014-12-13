@@ -60,6 +60,8 @@ GLWidget::GLWidget(QWidget *parent)
     m_O_d = glm::vec3(1.0,  1.0, 1.0);    // diffuse sphere color
     m_i_a = glm::vec3(0.25, 0.25, 0.25); // ambient light intensity
 
+    m_shaderSeed = ((float)rand()) / ((float)RAND_MAX);
+
     m_lastUpdate = QTime(0,0).msecsTo(QTime::currentTime());
     m_numFrames = 0;
 }
@@ -349,6 +351,7 @@ void GLWidget::renderStars() {
 void GLWidget::renderPlanet(glm::mat4x4 localizedOrbit) {
     Transforms sphereTransform = m_transform;
     float time = QTime(0,0).msecsTo(QTime::currentTime());
+    glUniform1f(glGetUniformLocation(m_shaderPrograms["planet"], "seed"), m_shaderSeed);
     GLuint mvp = glGetUniformLocation(m_shaderPrograms["planet"], "mvp");
 
     // Transform and render the moon - local orbit
