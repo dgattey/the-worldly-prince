@@ -3,6 +3,7 @@
 in vec3 position;
 in vec3 normal;
 
+uniform float seed;
 uniform mat4x4 mvp;
 
 out float noise;

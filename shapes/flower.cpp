@@ -89,10 +89,6 @@ Flower::Flower(Flower *around)
 Flower::~Flower()
 {
     delete[] petalModels;
-
-    delete &petal;
-    delete &center;
-    delete &stem;
 }
 
 bool Flower::isVisible(glm::vec3 cameraEye) {

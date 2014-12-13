@@ -16,15 +16,12 @@ public:
     virtual ~Flower();
     bool isVisible(glm::vec3 cameraEye);
 
-    Cylinder stem;
     glm::mat4x4 cylModel;
 
-    Sphere center;
     glm::mat4x4 centerModel;
     glm::vec3 centerColor;
 
     int petalCount;
-    Sphere petal;
     glm::mat4x4 *petalModels;
     glm::vec3 petalColor;
 
