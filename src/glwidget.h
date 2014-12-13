@@ -126,6 +126,8 @@ private:
     int m_numFrames;
     float m_currentFPS;
     float m_shaderSeed;
+    bool m_textHidden;
+    float m_timeMultiplier;
 
     QFont m_font; // font for rendering text
 

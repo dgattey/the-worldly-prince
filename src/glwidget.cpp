@@ -65,6 +65,8 @@ GLWidget::GLWidget(QWidget *parent)
 
     m_lastUpdate = QTime(0,0).msecsTo(QTime::currentTime());
     m_numFrames = 0;
+    m_textHidden = false;
+    m_timeMultiplier = 1.0f;
 }
 
 GLWidget::~GLWidget()
@@ -223,7 +225,7 @@ void GLWidget::paintGL()
     int time = QTime(0,0).msecsTo(QTime::currentTime());
 
     if (m_isOrbiting) {
-        m_elapsedTime += (time - m_lastTime);
+        m_elapsedTime += m_timeMultiplier*(time - m_lastTime);
         m_lastTime = time;
     }
 
@@ -349,8 +351,8 @@ void GLWidget::renderStars() {
         }
         if (!m_isOrbiting) continue;
 
-        m_particleData[i].pos = m_particleData[i].pos + m_particleData[i].dir;
-        m_particleData[i].life += 1.0f*m_particleData[i].decay;
+        m_particleData[i].pos = m_particleData[i].pos + m_timeMultiplier*m_particleData[i].dir;
+        m_particleData[i].life += m_timeMultiplier*m_particleData[i].decay;
 
         if (m_particleData[i].life <= 0 || m_particleData[i].life >= 150) {
             m_particleData[i].decay *= -1.0f;
@@ -397,9 +399,9 @@ void GLWidget::renderPlanets(glm::mat4x4 localizedOrbit) {
     m_earth.render();
 
     // Mars - scale, local orbit, orbit around point, red and maroon
-    glm::vec4 red = glm::vec4(0.6, 0.25, 0.15, 0.4);
+    glm::vec4 red = glm::vec4(0.6, 0.25, 0.15, 0.3);
     glUniform4fv(colorLow, 1, &red[0]);
-    glm::vec4 maroon = glm::vec4(0.5, 0.3, 0.3, 0.35);
+    glm::vec4 maroon = glm::vec4(0.4, 0.2, 0.2, 0.3);
     glUniform4fv(colorHigh, 1, &maroon[0]);
     glUniform1f(threshold, 1.32f);
     sphereTransform.model = glm::rotate(m_elapsedTime/(3.6f*m_fps), glm::vec3(0,1,0)) *
@@ -584,12 +586,15 @@ void GLWidget::updateCamera()
  **/
 void GLWidget::paintText()
 {
+    if (m_textHidden) return;
     glColor3f(1.f, 1.f, 1.f);
 
     // QGLWidget's renderText takes xy coordinates, a string, and a font
     renderText(10, 20, "FPS: " + QString::number((int) (m_currentFPS + .5f)), m_font);
-    renderText(10, 40, "(Space): Pause", m_font);
-    renderText(10, 60, "R: Refresh", m_font);
+    renderText(10, 50, "Space: Pause Rotation", m_font);
+    renderText(10, 70, "R: Random Refresh", m_font);
+    renderText(10, 90, "Arrows: Rotation Speed", m_font);
+    renderText(10, 110, "H: Hide Text", m_font);
 }
 
 
@@ -622,6 +627,20 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         case Qt::Key_R:
             {
             refresh();
+            break;
+            }
+        case Qt::Key_H: {
+            m_textHidden = !m_textHidden;
+            break;
+            }
+        case Qt::Key_Right: {
+            m_timeMultiplier *= 1.1f;
+            if (m_timeMultiplier > 100.0f) m_timeMultiplier = 100.0f;
+            break;
+            }
+        case Qt::Key_Left: {
+            m_timeMultiplier *= 0.9f;
+            if (m_timeMultiplier < 0.1f) m_timeMultiplier = 0.1f;
             break;
             }
         case Qt::Key_Space:
