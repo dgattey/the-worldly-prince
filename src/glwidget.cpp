@@ -137,7 +137,7 @@ void GLWidget::initializeParticles() {
  **/
 void GLWidget::createShaderPrograms()
 {
-    m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/phong.vert", ":/shaders/phong.frag");
+    m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/flower.vert", ":/shaders/flower.frag");
 
     m_shaderPrograms["planet"] = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
     m_sphere.init(VERTSPLANET, VERTSPLANET,
@@ -233,30 +233,26 @@ void GLWidget::renderFlowers()
 
         sphereTransform.model = f->cylModel;
 
-        glUniform1f(glGetUniformLocation(m_shaderPrograms["flower"], "k_a"), m_k_a);
-        glUniform1f(glGetUniformLocation(m_shaderPrograms["flower"], "k_d"), m_k_d);
-        glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "O_a"), 1, glm::value_ptr(m_O_a));
-        glUniform3f(glGetUniformLocation(m_shaderPrograms["flower"], "O_d"), m_O_d.x, m_O_d.y, m_O_d.z);
-        glUniform3f(glGetUniformLocation(m_shaderPrograms["flower"], "i_a"), m_i_a.x, m_i_a.y, m_i_a.z);
-
-        glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "lightIntensities"), NUM_LIGHTS, glm::value_ptr(m_lightIntensities[0]));
-        glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "lightPositions"), NUM_LIGHTS, glm::value_ptr(m_lightPositions[0]));
+        glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "color"), 1, glm::value_ptr(glm::vec3(0, 0.5, 0)));
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
         glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
         f->stem.render();
+
+        sphereTransform.model = f->centerModel;
+
+        glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "color"), 1, glm::value_ptr(f->centerColor));
+        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
+
+        f->center.render();
 
         for (int i = 0; i < f->petalCount; i++) {
 
             sphereTransform.model = f->petalModels[i];
 
             // hard code some of the colors
-            glUniform1f(glGetUniformLocation(m_shaderPrograms["flower"], "k_a"), 0.5f);
-            glUniform1f(glGetUniformLocation(m_shaderPrograms["flower"], "k_d"), 0.0f);
-
-            glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "O_a"), 1, glm::value_ptr(f->petalColor));
-            glUniform3f(glGetUniformLocation(m_shaderPrograms["flower"], "O_d"), f->petalColor.r, f->petalColor.g, f->petalColor.b);
-            glUniform3f(glGetUniformLocation(m_shaderPrograms["flower"], "i_a"), 0.01, 0.01, 0.01);
+            glUniform3fv(glGetUniformLocation(m_shaderPrograms["flower"], "color"), 1, glm::value_ptr(f->petalColor));
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "mvp"), 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
             glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["flower"], "m"), 1, GL_FALSE, &sphereTransform.model[0][0]);
 
@@ -439,6 +435,9 @@ void GLWidget::generateFlowers()
         Flower *f = new Flower();
         f->stem.init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
                      glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
+        f->center.init(5, 5,
+                       glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                       glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
         for (int j = 0; j < f->petalCount; j++) {
             f->petals[j].init(5,5,
                               glGetAttribLocation(m_shaderPrograms["flower"], "position"),
@@ -451,6 +450,9 @@ void GLWidget::generateFlowers()
             Flower *next = new Flower(f);
             next->stem.init(glGetAttribLocation(m_shaderPrograms["flower"], "position"),
                             glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
+            next->center.init(5, 5,
+                           glGetAttribLocation(m_shaderPrograms["flower"], "position"),
+                           glGetAttribLocation(m_shaderPrograms["flower"], "normal"));
             for (int j = 0; j < next->petalCount; j++) {
                 next->petals[j].init(5,5,
                                      glGetAttribLocation(m_shaderPrograms["flower"], "position"),

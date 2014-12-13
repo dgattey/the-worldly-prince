@@ -42,8 +42,8 @@ HEADERS += \
 FORMS += src/mainwindow.ui
 
 OTHER_FILES += \
-    shaders/phong.frag \
-    shaders/phong.vert \
+    shaders/flower.frag \
+    shaders/flower.vert \
     shaders/brightpass.frag \
     shaders/lightblur.frag \
     shaders/tex.vert \

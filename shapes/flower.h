@@ -19,6 +19,10 @@ public:
     Cylinder stem;
     glm::mat4x4 cylModel;
 
+    Sphere center;
+    glm::mat4x4 centerModel;
+    glm::vec3 centerColor;
+
     int petalCount;
     Sphere *petals;
     glm::mat4x4 *petalModels;

@@ -27,18 +27,37 @@ Flower::Flower()
     glm::mat4x4 arbitraryRotation = glm::rotate((float)(rand() % 360), dims);
 
     // lots of hard coded transformations
-    cylModel = arbitraryRotation * glm::translate( glm::vec3(0.0f, -0.72f, 0.0f ) ) * glm::scale(glm::vec3(0.003f, 0.03f, 0.003f)) * glm::mat4(1.0f);
+    float sphereRadius = 0.65f;
+    float stemScale = 0.08f;
+
+    cylModel = arbitraryRotation
+            * glm::translate(glm::vec3(0.0f, sphereRadius + (stemScale/2), 0.0f))
+            * glm::scale(glm::vec3(stemScale/30.f, stemScale, stemScale/30.f))
+            * glm::mat4(1.0f);
+
+    centerModel = arbitraryRotation
+            * glm::translate(glm::vec3(0.0f, sphereRadius + stemScale, 0.0f))
+            * glm::scale(glm::vec3(stemScale/15.f))
+            * glm::mat4(1.0f);
+
+    centerColor = glm::vec3(1.f, 0.5f + ((float)rand()) / (2.f * RAND_MAX), 0.f);
     petalCount = rand() % 4 + 5;
     petals = new Sphere[petalCount];
     petalModels = new glm::mat4x4[petalCount];
-    petalColor = glm::vec3(rand() % 150, rand() % 150, rand() % 150);
+    petalColor = glm::vec3((float)rand() / ((float)RAND_MAX),
+                           (float)rand() / ((float)RAND_MAX),
+                           (float)rand() / ((float)RAND_MAX));
 
     // general petal translation
-    glm::mat4x4 petalTransform = glm::translate(glm::vec3(0.f, -0.735f, 0.0f)) ;
+    glm::mat4x4 petalTransform = glm::translate(glm::vec3(0.f, sphereRadius + stemScale, 0.0f)) ;
 
     // transform each of the pedals radially
     for (int j = 0; j < petalCount; j++) {
-        petalModels[j] = arbitraryRotation * petalTransform * glm::rotate(glm::floor(360.f / (float)petalCount * j), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::vec3(0.02f / ((float)petalCount), 0.003f, 0.03f)) * glm::mat4(1.f);
+        petalModels[j] = arbitraryRotation
+                * petalTransform
+                * glm::rotate(glm::floor(360.f / (float)petalCount * j), glm::vec3(0.0f, 1.0f, 0.0f))
+                * glm::scale(glm::vec3(0.02f / ((float)petalCount), 0.003f, 0.03f))
+                * glm::mat4(1.f);
     }
 }
 
@@ -53,10 +72,14 @@ Flower::Flower()
 Flower::Flower(Flower *around)
 {
     petalCount = around->petalCount;
-    float angle = rand() % 50;
-    glm::vec3 dims =  glm::vec3(((float) rand() / (RAND_MAX)), ((float) rand() / (RAND_MAX)), ((float) rand() / (RAND_MAX)));
+    float angle = pow(rand() % ((int)pow(360.f, (1.f/2.f))), 2.f);
+    glm::vec3 dims = glm::vec3((float)rand() / ((float)RAND_MAX),
+                               (float)rand() / ((float)RAND_MAX),
+                               (float)rand() / ((float)RAND_MAX));
     glm::mat4x4 arbitraryRotation = glm::rotate(angle, dims);
     cylModel = arbitraryRotation * around->cylModel;
+    centerModel = arbitraryRotation * around->centerModel;
+    centerColor = around->centerColor;
     petals = new Sphere[petalCount];
     petalModels = new glm::mat4x4[petalCount];
     petalColor = around->petalColor;
