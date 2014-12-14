@@ -62,7 +62,7 @@ class GLWidget : public QGLWidget
     Q_OBJECT
 
 public:
-    GLWidget(QWidget *parent = 0);
+    GLWidget(QGLFormat format, QWidget *parent = 0);
     ~GLWidget();
 
     void updateCamera();

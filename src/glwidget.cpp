@@ -20,8 +20,8 @@
 #define VERTSMOON 50
 #define VERTSEARTH 120
 
-GLWidget::GLWidget(QWidget *parent)
-    : QGLWidget(parent), m_timer(this), m_fps(60.0f), m_increment(0),
+GLWidget::GLWidget(QGLFormat format, QWidget *parent)
+    : QGLWidget(format, parent), m_timer(this), m_fps(60.0f), m_increment(0),
       m_font("Deja Vu Sans Mono", 12, 4)
 {
 
