@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Final Project</string>
   </property>
-  <widget class="GLWidget" name="centralWidget"/>
+  <widget class="QWidget" name="centralWidget"/>
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
@@ -24,14 +24,6 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>GLWidget</class>
-   <extends>QWidget</extends>
-   <header>glwidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>

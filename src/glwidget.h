@@ -129,7 +129,7 @@ private:
     bool m_textHidden;
     float m_timeMultiplier;
 
-    QFont *m_font; // font for rendering text
+    QFont m_font; // font for rendering text
 
     // Resources
     QHash<QString, GLuint> m_shaderPrograms; // hash table for easy access to shaders
