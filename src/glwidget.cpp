@@ -20,9 +20,8 @@
 #define VERTSMOON 50
 #define VERTSEARTH 120
 
-GLWidget::GLWidget(QWidget *parent)
-    : QGLWidget(parent), m_timer(this), m_fps(60.0f), m_increment(0),
-      m_font("Deja Vu Sans Mono", 12, 4)
+GLWidget::GLWidget(QGLFormat format, QWidget *parent)
+    : QGLWidget(format, parent), m_timer(this), m_fps(60.0f), m_increment(0)
 {
 
     setFocusPolicy(Qt::StrongFocus);
@@ -31,9 +30,9 @@ GLWidget::GLWidget(QWidget *parent)
     // set up camera
     m_camera.center = glm::vec3(0.f, 0.f, 0.f);
     m_camera.up = glm::vec3(0.f, 1.f, 0.f);
-    m_camera.zoom = 3.0f;
+    m_camera.zoom = 2.0f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
-    m_camera.fovy = 60.f;
+    m_camera.fovy = 1.f;
     m_isOrbiting = true; // rotations
 
     // Set up 60 FPS draw loop
@@ -68,6 +67,9 @@ GLWidget::GLWidget(QWidget *parent)
     m_numFrames = 0;
     m_textHidden = false;
     m_timeMultiplier = 1.0f;
+
+    m_font = new QFont("Arial", 12, 4);
+    m_font->initialize();
 }
 
 GLWidget::~GLWidget()
@@ -588,15 +590,15 @@ void GLWidget::updateCamera()
  **/
 void GLWidget::paintText()
 {
-    if (m_textHidden) return;
+    if (!m_textHidden) return;
     glColor3f(1.f, 1.f, 1.f);
 
     // QGLWidget's renderText takes xy coordinates, a string, and a font
-    renderText(10, 20, "FPS: " + QString::number((int) (m_currentFPS + .5f)), m_font);
-    renderText(10, 50, "Space: Pause", m_font);
-    renderText(10, 70, "R: Random Refresh", m_font);
-    renderText(10, 90, "Arrows: Change Speed", m_font);
-    renderText(10, 110, "H: Hide Text", m_font);
+    renderText(10, 20, "FPS: " + QString::number((int) (m_currentFPS + .5f)), *m_font);
+    renderText(10, 50, "Space: Pause", *m_font);
+    renderText(10, 70, "R: Random Refresh", *m_font);
+    renderText(10, 90, "Arrows: Change Speed", *m_font);
+    renderText(10, 110, "H: Hide Text", *m_font);
 }
 
 

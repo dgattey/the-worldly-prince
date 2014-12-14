@@ -1,4 +1,4 @@
-#version 330 core
+#version 330
 
 in vec2 uv; // uv coordinate for frag position
 
@@ -10,7 +10,7 @@ out vec4 fragColor; //output color
 
 void main(){
     // Figure out something reasonable to do with texColor and color...
-    vec4 texColor = texture2D(textureSampler, uv);
+    vec4 texColor = texture(textureSampler, uv);
     float dx = 0.5f - uv.x;
     float dy = 0.5f - uv.y;
     float radius = sqrt(dx*dx + dy*dy);

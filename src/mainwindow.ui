@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>[Lab03] Animation</string>
+   <string>Final Project</string>
   </property>
   <widget class="GLWidget" name="centralWidget"/>
   <action name="actionQuit">

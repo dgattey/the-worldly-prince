@@ -62,7 +62,7 @@ class GLWidget : public QGLWidget
     Q_OBJECT
 
 public:
-    GLWidget(QWidget *parent = 0);
+    GLWidget(QGLFormat format, QWidget *parent = 0);
     ~GLWidget();
 
     void updateCamera();
@@ -129,7 +129,7 @@ private:
     bool m_textHidden;
     float m_timeMultiplier;
 
-    QFont m_font; // font for rendering text
+    QFont *m_font; // font for rendering text
 
     // Resources
     QHash<QString, GLuint> m_shaderPrograms; // hash table for easy access to shaders
