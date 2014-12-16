@@ -126,6 +126,7 @@ void GLRenderer::refresh() {
   Create shader programs. Use the ResourceLoader new*ShaderProgram helper methods.
  **/
 void GLRenderer::createShaderPrograms() {
+    fprintf(stdout, "\nCompiling all shaders...\n");
     m_stars->createShaderProgram();
     m_planets->createShaderProgram();
     m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/flower.vert", ":/shaders/flower.frag");
@@ -133,6 +134,7 @@ void GLRenderer::createShaderPrograms() {
     m_shaderPrograms["tex"] = ResourceLoader::loadShaders(":/shaders/tex.vert", ":/shaders/tex.frag");
     m_texquad.init(glGetAttribLocation(m_shaderPrograms["tex"], "position"),
                    glGetAttribLocation(m_shaderPrograms["tex"], "texCoords"));
+    fprintf(stdout, "\n");
 }
 
 /**
