@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/shaders">
+        <file>flower.frag</file>
+        <file>flower.vert</file>
+        <file>tex.vert</file>
+        <file>tex.frag</file>
+        <file>star.frag</file>
+        <file>star.vert</file>
+        <file>noise.frag</file>
+        <file>noise.vert</file>
+    </qresource>
+</RCC>
