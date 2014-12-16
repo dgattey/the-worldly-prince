@@ -7,16 +7,13 @@
 
 #define NUMPARTICLES 3000
 
-class Transforms;
-class TexQuad;
 class Particle;
 class ParticleData;
 class GLRenderer;
 
 /**
  * @brief Class to support rendering of arbitrary numbers of
- * planets, using the Perlin noise shader to modulate and
- * color them. Relies on Sphere class to actually render
+ * stars, using particles to actually draw them
  */
 class StarsRenderer { 
 public:

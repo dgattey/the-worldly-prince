@@ -1,48 +1,46 @@
-#include "FlowersRenderer.h"
+#include "StarsRenderer.h"
 #include "resourceloader.h"
-#include "sphere.h"
 #include "GLRenderer.h"
+#include "PlanetsRenderer.h"
 
-#define VERTS_HIGH 48
-#define VERTS_LOW 36
-#define MOON 0
-#define EARTHMARS 1
+#include "flower.h"
+#include "cylinder.h"
+#include "sphere.h"
 
-FlowersRenderer::FlowersRenderer() {
-    refresh();
+#define VARIETY 10 // Types of flowers
+#define GARDENSIZE 15 // Num similar flowers per garden
+#define RESOLUTION 5 // How many vertices per sphere dimension
+
+FlowersRenderer::FlowersRenderer(PlanetsRenderer *planets, GLRenderer *renderer) {
+    m_renderer = renderer;
+    m_planets = planets;
 }
 
 FlowersRenderer::~FlowersRenderer() {
-    for (int i=0; i<m_planets.size(); i++) {
-        delete m_planets.at(i);
+    for (int i=0; i<m_flowers.size(); i++) {
+        delete m_flowers.at(i);
     }
+    delete m_flowerSphere;
+    delete m_flowerCylinder;
 }
 
 void FlowersRenderer::createShaderProgram() {
-    m_shader = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
-
-    GLuint pos = glGetAttribLocation(m_shader, "position");
-    GLuint norm = glGetAttribLocation(m_shader, "normal");
-
-    // Order is moon, earth, mars
-    m_planets += Sphere::generate(VERTS_LOW,pos,norm);
-    m_planets += Sphere::generate(VERTS_HIGH,pos,norm);
+    m_shader = ResourceLoader::loadShaders(":/shaders/flower.vert", ":/shaders/flower.frag");
 }
 
 void FlowersRenderer::createFBO(glm::vec2 size) {
-    GLRenderer::createFBO(&m_FBO, &m_colorAttachment, getTextureID(), size, true);
+    m_FBO = *m_planets->getFBO();
+    m_colorAttachment = *m_planets->getColorAttach();
 }
 
-void FlowersRenderer::render(Transforms trans, glm::mat4x4 localizedOrbit, float rSpeed) {
+void FlowersRenderer::render(glm::mat4x4 orbit) {
     glUseProgram(m_shader);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
     glActiveTexture(GL_TEXTURE0+getTextureID());
     glBindTexture(GL_TEXTURE_2D, m_colorAttachment);
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Draw the planet with depth and no blending
-    drawPlanets(trans, localizedOrbit, rSpeed);
+    // Draws stars without depth and with blending
+    drawFlowers(orbit);
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -51,77 +49,76 @@ void FlowersRenderer::render(Transforms trans, glm::mat4x4 localizedOrbit, float
 }
 
 void FlowersRenderer::refresh() {
-    randomizeSeed();
+    m_flowers.clear();
+
+    m_flowerCylinder = new Cylinder();
+    m_flowerCylinder->init(glGetAttribLocation(m_shader, "position"),
+                 glGetAttribLocation(m_shader, "normal"));
+    m_flowerSphere = new Sphere();
+    m_flowerSphere->init(RESOLUTION, RESOLUTION,
+                   glGetAttribLocation(m_shader, "position"),
+                   glGetAttribLocation(m_shader, "normal"));
+
+    for (int i = 0; i < VARIETY; i++) {
+        // our template flower
+        Flower *f = new Flower();
+        m_flowers += f;
+
+        // other similar flowers
+        for (int j = 0; j < GARDENSIZE; j++) {
+            m_flowers += new Flower(f);
+        }
+    }
 }
 
 // GETTERS
 
 int FlowersRenderer::getTextureID() {
-    return 1;
+    return m_planets->getTextureID();
 }
 
 GLuint *FlowersRenderer::getColorAttach() {
+    m_colorAttachment = *m_planets->getColorAttach();
     return &m_colorAttachment;
 }
 
 GLuint *FlowersRenderer::getFBO() {
+    m_FBO = *m_planets->getFBO();
     return &m_FBO;
 }
 
 // START OF PRIVATE METHODS
 
-void FlowersRenderer::drawPlanets(Transforms origTrans, glm::mat4x4 localizedOrbit, float rSpeed) {
-    // Pass shared info to shader first
-    glUniform1f(glGetUniformLocation(m_shader, "seed"), m_seed);
-
+void FlowersRenderer::drawFlowers(glm::mat4x4 orbit) {
+    Transforms origTrans = m_renderer->getTransformation();
     Transforms trans = origTrans;
-    GLuint mvp = glGetUniformLocation(m_shader, "mvp");
-    GLuint colorLow = glGetUniformLocation(m_shader, "colorLow");
-    GLuint colorHigh = glGetUniformLocation(m_shader, "colorHigh");
-    GLuint threshold = glGetUniformLocation(m_shader, "threshold");
 
-    // Colors
-    glm::vec4 gray = glm::vec4(0.48, 0.48, 0.5, 0.4);
-    glm::vec4 blue = glm::vec4(0.1, 0.1, 0.7, 0.6);
-    glm::vec4 green = glm::vec4(0.08, 0.55, 0.25, 0.15);
-    glm::vec4 red = glm::vec4(0.6, 0.25, 0.15, 0.3);
-    glm::vec4 maroon = glm::vec4(0.4, 0.2, 0.2, 0.3);
+    // iterate through each of the flowers and render the components
+    for (int i=0; i<m_flowers.size(); i++) {
+        Flower *f = m_flowers.at(i);
 
-    // Moon - local orbit only, and all gray
-    glUniform4fv(colorHigh, 1, &gray[0]);
-    glUniform1f(threshold, -999.0f); // Only show colorHigh
-    trans.model = localizedOrbit *
-                  origTrans.model;
-    glUniformMatrix4fv(mvp, 1, GL_FALSE, &trans.getTransform()[0][0]);
-    m_planets.at(MOON)->render();
+        // Stem
+        trans.model = orbit * f->cylModel;
+        glUniform3fv(glGetUniformLocation(m_shader, "color"), 1, glm::value_ptr(glm::vec3(0, 0.5, 0)));
+        glUniformMatrix4fv(glGetUniformLocation(m_shader, "mvp"), 1, GL_FALSE, &trans.getTransform()[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(m_shader, "m"), 1, GL_FALSE, &trans.model[0][0]);
+        m_flowerCylinder->render();
 
+        // Center sphere
+        trans.model = orbit * f->centerModel;
+        glUniform3fv(glGetUniformLocation(m_shader, "color"), 1, glm::value_ptr(f->centerColor));
+        glUniformMatrix4fv(glGetUniformLocation(m_shader, "mvp"), 1, GL_FALSE, &trans.getTransform()[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(m_shader, "m"), 1, GL_FALSE, &trans.model[0][0]);
+        m_flowerSphere->render();
 
-    // Earth - scale, local orbit, orbit around point, blue and green
-    glUniform4fv(colorLow, 1, &blue[0]);
-    glUniform4fv(colorHigh, 1, &green[0]);
-    glUniform1f(threshold, 1.72f);
-    trans.model = glm::rotate(rSpeed/4.0f, glm::vec3(0,1,0)) *
-                  glm::translate(glm::vec3(7, 0, 17)) *
-                  glm::rotate(-rSpeed/2.0f, glm::vec3(1,2,4)) *
-                  glm::scale(glm::vec3(3.3f)) *
-                  origTrans.model;
-    glUniformMatrix4fv(mvp, 1, GL_FALSE, &trans.getTransform()[0][0]);
-    m_planets.at(EARTHMARS)->render();
-
-    // Mars - scale, local orbit, orbit around point, red and maroon
-    glUniform4fv(colorLow, 1, &red[0]);
-    glUniform4fv(colorHigh, 1, &maroon[0]);
-    glUniform1f(threshold, 1.32f);
-    trans.model = glm::rotate(rSpeed/3.6f, glm::vec3(0,1,0)) *
-                  glm::translate(glm::vec3(-40, 0, 20)) *
-                  glm::rotate(-rSpeed/2.0f, glm::vec3(0,3,1)) *
-                  glm::scale(glm::vec3(3.6f)) *
-                  origTrans.model;
-    glUniformMatrix4fv(mvp, 1, GL_FALSE, &trans.getTransform()[0][0]);
-    m_planets.at(EARTHMARS)->render();
-}
-
-void FlowersRenderer::randomizeSeed() {
-    m_seed = ((float)rand()) / ((float)RAND_MAX);
+        // All petals
+        for (int i = 0; i < f->petalCount; i++) {
+            trans.model = orbit * f->petalModels[i];
+            glUniform3fv(glGetUniformLocation(m_shader, "color"), 1, glm::value_ptr(f->petalColor));
+            glUniformMatrix4fv(glGetUniformLocation(m_shader, "mvp"), 1, GL_FALSE, &trans.getTransform()[0][0]);
+            glUniformMatrix4fv(glGetUniformLocation(m_shader, "m"), 1, GL_FALSE, &trans.model[0][0]);
+            m_flowerSphere->render();
+        }
+    }
 }
 

@@ -5,7 +5,6 @@
 StarsRenderer::StarsRenderer(GLRenderer *renderer) {
     m_renderer = renderer;
     m_particleData = new ParticleData[NUMPARTICLES];
-    refresh();
 }
 
 StarsRenderer::~StarsRenderer() {

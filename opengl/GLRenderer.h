@@ -11,10 +11,6 @@
 #include "FlowersRenderer.h"
 #include "StarsRenderer.h"
 
-#include "flower.h"
-#include "cylinder.h"
-#include "sphere.h"
-
 #define NUM_LIGHTS 4
 
 // Forward declared classes
@@ -77,14 +73,6 @@ private:
     // Prints FPS to console
     void printFPS();
 
-    // TODO: MOVE TO OWN CLASS
-    void renderFlowers(glm::mat4x4 localizedOrbit);
-    void generateFlowers();
-    void renderFlowersPass(glm::mat4x4 localizedOrbit);
-    std::list<Flower *> m_flowers;
-    Sphere *m_flowerSphere;
-    Cylinder *m_flowerCylinder;
-
     // Scene variables
     Camera m_camera; // Camera of scene
     Transforms m_transform; // Current scene transform
@@ -92,9 +80,11 @@ private:
     glm::vec2 m_prevMousePos; // Mouse pos before
     bool m_isOrbiting; // If paused or not
 
-    // Other renderers
+    // Renderers
+    GLuint m_shaderTex;
     StarsRenderer *m_stars; // Renders all stars
     PlanetsRenderer *m_planets; // Renders all planets
+    FlowersRenderer *m_flowers; // Renders all flowers
 
     // Time
     QTimer m_timer;
@@ -106,19 +96,7 @@ private:
     int m_numFrames;
     float m_currentFPS;
     float m_timeMultiplier; // Global speed multiplier
-    float m_rotationalSpeed; // Current rotational speed
-
-    // Resources
-    QHash<QString, GLuint> m_shaderPrograms; // hash table for easy access to shaders
-
-    // Lights
-    glm::vec3 m_lightPositions[NUM_LIGHTS];
-    glm::vec3 m_lightIntensities[NUM_LIGHTS];
-    float m_k_a;
-    float m_k_d;
-    glm::vec3 m_O_a;
-    glm::vec3 m_O_d;
-    glm::vec3 m_i_a;
+    float m_rotationalSpeed; // Current rotational speed 
 };
 
 #endif // GLWIDGET_H

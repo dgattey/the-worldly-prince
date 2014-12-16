@@ -1,24 +1,26 @@
-#ifndef FLOWERRENDERER_H
-#define FLOWERRENDERER_H
+#ifndef FLOWERSRENDERER_H
+#define FLOWERSRENDERER_H
 
 #include "CS123Common.h"
 
-class Transforms;
+class GLRenderer;
+class PlanetsRenderer;
+class Flower;
 class Sphere;
+class Cylinder;
 
 /**
  * @brief Class to support rendering of arbitrary numbers of
- * planets, using the Perlin noise shader to modulate and
- * color them. Relies on Sphere class to actually render
+ * flowers, using the flowers shader to actually draw them
  */
 class FlowersRenderer {
 public:
-    FlowersRenderer();
+    FlowersRenderer(PlanetsRenderer *planets, GLRenderer *renderer);
     ~FlowersRenderer();
 
     void createShaderProgram();
     void createFBO(glm::vec2 size);
-    void render(Transforms trans, glm::mat4x4 localizedOrbit, float rSpeed);
+    void render(glm::mat4x4 orbit);
     void refresh();
 
     int getTextureID();
@@ -26,20 +28,20 @@ public:
     GLuint *getFBO();
 
 private:
-    void drawPlanets(Transforms trans, glm::mat4x4 localizedOrbit, float rSpeed);
-    void randomizeSeed();
+    void drawFlowers(glm::mat4x4 orbit);
+
+    GLRenderer *m_renderer;
+    PlanetsRenderer *m_planets;
 
     // GL needs
     GLuint m_FBO;
     GLuint m_shader;
     GLuint m_colorAttachment;
 
-    // For shaders
-    float m_seed;
-
     // Objects
-    QList<Sphere*> m_planets;
-
+    QList<Flower *> m_flowers;
+    Sphere *m_flowerSphere;
+    Cylinder *m_flowerCylinder;
 };
 
-#endif // FLOWERRENDERER_H
+#endif // FLOWERSRENDERER_H

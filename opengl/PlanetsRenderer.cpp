@@ -10,7 +10,6 @@
 
 PlanetsRenderer::PlanetsRenderer(GLRenderer *renderer) {
     m_renderer = renderer;
-    refresh();
 }
 
 PlanetsRenderer::~PlanetsRenderer() {
