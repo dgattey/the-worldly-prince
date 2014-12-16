@@ -17,12 +17,8 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define VERTSMOON 32
-#define VERTSEARTH 48
-
 GLRenderer::GLRenderer(QGLFormat format, QWidget *parent)
-    : QGLWidget(format, parent), m_timer(this), m_fps(60.0f), m_increment(0),
-      m_font("Deja Vu Sans Mono", 12, 4) {
+    : QGLWidget(format, parent), m_timer(this), m_fps(60.0f), m_increment(0) {
 
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -63,15 +59,19 @@ GLRenderer::GLRenderer(QGLFormat format, QWidget *parent)
 
     m_lastUpdate = QTime(0,0).msecsTo(QTime::currentTime());
     m_numFrames = 0;
-    m_textHidden = false;
     m_timeMultiplier = 1.0f;
+
+    m_stars = new StarsRenderer(this);
+    m_planets = new PlanetsRenderer(this);
 }
 
 GLRenderer::~GLRenderer() {
     m_flowers.clear();
     delete m_flowerSphere;
     delete m_flowerCylinder;
-    delete[] m_particleData;
+
+    delete m_stars;
+    delete m_planets;
 }
 
 void GLRenderer::initializeGL() {
@@ -94,8 +94,7 @@ void GLRenderer::initializeGL() {
     m_lastTime = QTime(0,0).msecsTo(QTime::currentTime());
 
     // Create data
-    initializeParticles();
-    generateFlowers();
+    refresh();
 
     // Enable depth testing, so that objects are occluded based on depth instead of drawing order
     glEnable(GL_DEPTH_TEST);
@@ -115,37 +114,11 @@ void GLRenderer::initializeGL() {
 }
 
 void GLRenderer::refresh() {
-    delete[] m_particleData;
     m_flowers.clear();
-    initializeParticles();
     generateFlowers();
-    m_planet.refresh();
-}
 
-void GLRenderer::initializeParticles() {
-    m_numParticles = 3000;
-    m_particleData = new ParticleData[m_numParticles];
-    for (int i = 0; i<m_numParticles; i++) {
-        float x,y,z;
-        float radius = 0.0f;
-        while (radius < 100.0f) {
-            x = urand(-300.0f, 300.0f);
-            y = urand(-300.0f, 300.0f);
-            z = urand(-300.0f, 300.0f);
-            radius = sqrt(pow(x,2.0f) + pow(y,2.0f) + pow(z,2.0f));
-        }
-        m_particleData[i].life = urand(0.0f, 150.0f);//100.0f;
-        m_particleData[i].dir = glm::vec3(0.0f,0.0f,0.0f);
-        m_particleData[i].pos = glm::vec3(x,y,z);
-        m_particleData[i].color = glm::vec3(0.9f, 0.7f, 0.8f);
-        m_particleData[i].decay = -1.0f;
-        if (urand(0.0f,1.0f) > 0.5f)
-            m_particleData[i].decay = 1.0f;
-        if (urand(0.0f,1.0f) > 0.97f) { // SHOOTING STAR!
-            m_particleData[i].color = glm::vec3(0.8f, 0.5f, 0.4f);
-            m_particleData[i].dir = glm::vec3(urand(-2.0f, 2.0f),urand(-2.0f, 2.0f),urand(-2.0f, 2.0f));
-        }
-    }
+    m_stars->refresh();
+    m_planets->refresh();
 }
 
 
@@ -153,16 +126,13 @@ void GLRenderer::initializeParticles() {
   Create shader programs. Use the ResourceLoader new*ShaderProgram helper methods.
  **/
 void GLRenderer::createShaderPrograms() {
-    m_planet.createShaderProgram();
+    m_stars->createShaderProgram();
+    m_planets->createShaderProgram();
     m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/flower.vert", ":/shaders/flower.frag");
 
     m_shaderPrograms["tex"] = ResourceLoader::loadShaders(":/shaders/tex.vert", ":/shaders/tex.frag");
     m_texquad.init(glGetAttribLocation(m_shaderPrograms["tex"], "position"),
                    glGetAttribLocation(m_shaderPrograms["tex"], "texCoords"));
-
-    m_shaderPrograms["star"] = ResourceLoader::loadShaders(":/shaders/star.vert",":/shaders/star.frag");
-    m_particle.init(glGetAttribLocation(m_shaderPrograms["star"], "position"),
-                    glGetAttribLocation(m_shaderPrograms["star"], "texCoord"));
 }
 
 /**
@@ -172,8 +142,8 @@ void GLRenderer::createShaderPrograms() {
   @param height: the viewport height
  **/
 void GLRenderer::createFramebufferObjects(glm::vec2 size) {
-    createFBO(&m_starFBO, &m_starColorAttachment, 0, size, false);
-    m_planet.createFBO(size);
+    m_stars->createFBO(size);
+    m_planets->createFBO(size);
 
     // Clear
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -219,15 +189,16 @@ void GLRenderer::paintGL() {
         m_lastUpdate = time;
     }
 
-    float rSpeed = m_elapsedTime/(1.0*m_fps);
-    glm::mat4x4 localizedOrbit = glm::rotate(rSpeed/2.0f, glm::vec3(3,3,1));
+    m_rotationalSpeed = m_elapsedTime/(1.0*m_fps);
+    glm::vec3 rotateAxis = glm::vec3(3,3,1);
+    glm::mat4x4 localizedOrbit = glm::rotate(m_rotationalSpeed/2.0f, rotateAxis);
 
-    renderStarsPass();
-    m_planet.render(m_transform, localizedOrbit, rSpeed);
+    m_stars->render();
+    m_planets->render(localizedOrbit);
     renderFlowersPass(localizedOrbit);
     renderFinalPass();
 
-    paintText();
+    printFPS();
 
     updateCamera();
 }
@@ -271,117 +242,12 @@ void GLRenderer::renderFlowers(glm::mat4x4 localizedOrbit)
     }
 }
 
-void GLRenderer::renderStars() {
-    glm::mat4x4 atmosphericRotation = glm::rotate(m_elapsedTime/(25.0f*m_fps), glm::vec3(7,1,8));
-    for(int i =0; i<m_numParticles; i++) {
-
-        Transforms particleTransform = m_transform;
-
-        float x1 = m_particleData[i].pos.x;
-        float y1 = m_particleData[i].pos.y;
-        float z1 = m_particleData[i].pos.z;
-
-        glm::vec3 n = glm::vec3(0.0f,0.0f,1.0f);
-        glm::vec3 np = glm::normalize(glm::vec3(-x1,-y1,-z1));
-
-        glm::vec3 view = glm::normalize(m_camera.eye);
-        if (glm::dot(view, glm::vec3(atmosphericRotation * glm::vec4(np, 1.f))) > 0) { // Backface Culling!!!!!!
-
-            glm::vec3 axis = glm::cross(n, np);
-            float angle = glm::acos(glm::dot(n, np) / (glm::length(glm::vec4(n,0.0f)) * glm::length(glm::vec4(np,0.0f))));
-
-            particleTransform.model =
-                    atmosphericRotation *
-                    glm::translate(glm::vec3(x1,y1,z1)) *
-                    glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
-                    glm::rotate(angle*360.0f/6.28f, axis) *
-                    particleTransform.model;
-
-            float pulse = 1.0f;// cos((int)m_particleData[i].life % 6);
-
-            glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "mvp"), 1, GL_FALSE, &particleTransform.getTransform()[0][0]);
-            glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "m"), 1, GL_FALSE, &particleTransform.model[0][0]);
-            glUniform4f(glGetUniformLocation(m_shaderPrograms["star"], "color"),
-                    pulse*m_particleData[i].color.x,
-                    pulse*m_particleData[i].color.y,
-                    pulse*m_particleData[i].color.z,
-                    m_particleData[i].life / 150.0f);
-
-            m_particle.draw();
-
-            // Give shooting stars their tail
-            if (glm::length(glm::vec4(m_particleData[i].dir,0.0f)) > 0) {
-                for (int dt = 0; dt <= 8; dt++) {
-                    float coeff = 0.5f;
-                    glm::vec3 newPos = glm::vec3(m_particleData[i].pos.x - coeff*dt*m_particleData[i].dir.x /*- urand(-2.5f,2.5f)*/,
-                                                 m_particleData[i].pos.y - coeff*dt*m_particleData[i].dir.y /*- urand(-2.5f,2.5f)*/,
-                                                 m_particleData[i].pos.z - coeff*dt*m_particleData[i].dir.z /*- urand(-2.5f,2.5f)*/);
-                    Transforms temp = m_transform;
-                    temp.model =
-                            atmosphericRotation *
-                            glm::translate(newPos) *
-                            glm::rotate(angle*360.0f/6.28f, axis) *
-                            glm::scale(glm::vec3(1.0f + 1.0f/((float)dt))) *
-                            temp.model;
-                    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "mvp"), 1, GL_FALSE, &temp.getTransform()[0][0]);
-                    glUniformMatrix4fv(glGetUniformLocation(m_shaderPrograms["star"], "m"), 1, GL_FALSE, &temp.model[0][0]);
-                    glUniform4f(glGetUniformLocation(m_shaderPrograms["star"], "color"),
-                            (1.0f/((float)dt))*m_particleData[i].color.x,
-                            (1.0f/((float)dt))*m_particleData[i].color.y,
-                            (1.0f/((float)dt))*m_particleData[i].color.z,
-                            m_particleData[i].life / 150.0f);
-                    m_particle.draw();
-                }
-            }
-        }
-        if (!m_isOrbiting) continue;
-
-        m_particleData[i].pos = m_particleData[i].pos + m_timeMultiplier*m_particleData[i].dir;
-        m_particleData[i].life += m_timeMultiplier*m_particleData[i].decay;
-
-        if (m_particleData[i].life <= 0 || m_particleData[i].life >= 150) {
-            m_particleData[i].decay *= -1.0f;
-            if (glm::length(glm::vec4(m_particleData[i].dir,0.0f)) > 0 && m_particleData[i].life <= 0) {
-                m_particleData[i].pos.x = urand(-200.0f, 200.0f);
-                m_particleData[i].pos.y = urand(-200.0f, 200.0f);
-                m_particleData[i].pos.z = urand(-200.0f, 200.0f);
-            }
-        }
-    }
-
-}
-
-void GLRenderer::renderStarsPass()
-{
-    glUseProgram(m_shaderPrograms["star"]);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_starFBO);
-    glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
-    glActiveTexture(GL_TEXTURE0);
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Draws stars without depth and with blending and reset
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glDepthMask(GL_FALSE);
-    glEnable(GL_BLEND);
-
-    renderStars();
-
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-
-    // Clear
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(0);
-}
-
 void GLRenderer::renderFlowersPass(glm::mat4x4 localizedOrbit)
 {
     glUseProgram(m_shaderPrograms["flower"]);
-    glBindFramebuffer(GL_FRAMEBUFFER, *m_planet.getFBO());
-    glActiveTexture(GL_TEXTURE0+m_planet.getTextureID());
-    glBindTexture(GL_TEXTURE_2D, *m_planet.getColorAttach());
+    glBindFramebuffer(GL_FRAMEBUFFER, *m_planets->getFBO());
+    glActiveTexture(GL_TEXTURE0+m_planets->getTextureID());
+    glBindTexture(GL_TEXTURE_2D, *m_planets->getColorAttach());
 
     // Draw shapes with depth and no blending
     renderFlowers(localizedOrbit);
@@ -392,24 +258,29 @@ void GLRenderer::renderFlowersPass(glm::mat4x4 localizedOrbit)
     glUseProgram(0);
 }
 
-void GLRenderer::renderFinalPass()
-{
+void GLRenderer::renderFinalPass() {
     // Draw to the screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    int starID = m_stars->getTextureID();
+    int planetID = m_planets->getTextureID();
+
+    // Get shader ready
     glUseProgram(m_shaderPrograms["tex"]);
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "starTex"), 0);
-    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "planetTex"), 1);
+    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "starTex"), starID);
+    glUniform1i(glGetUniformLocation(m_shaderPrograms["tex"], "planetTex"), planetID);
 
-    // Draw composed stars
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
+    // Bind to the rendered stars texture
+    glActiveTexture(GL_TEXTURE0+starID);
+    glBindTexture(GL_TEXTURE_2D, *m_stars->getColorAttach());
 
-    // Draw composed planet and flowers
-    glActiveTexture(GL_TEXTURE0+m_planet.getTextureID());
-    glBindTexture(GL_TEXTURE_2D, *m_planet.getColorAttach());
+    // Bind to the rendered planet + flowers texture
+    glActiveTexture(GL_TEXTURE0+planetID);
+    glBindTexture(GL_TEXTURE_2D, *m_planets->getColorAttach());
+
+    // Draw
     renderTexturedQuad();
 
     // Clear
@@ -445,6 +316,28 @@ void GLRenderer::generateFlowers()
             m_flowers.push_back(new Flower(f));
         }
     }
+}
+
+////////// GETTERS //////////
+
+Camera GLRenderer::getCamera() {
+    return m_camera;
+}
+
+Transforms GLRenderer::getTransformation() {
+    return m_transform;
+}
+
+float GLRenderer::getSimulationSpeed() {
+    return m_timeMultiplier;
+}
+
+float GLRenderer::getRotationalSpeed() {
+    return m_rotationalSpeed;
+}
+
+bool GLRenderer::getPaused() {
+    return !m_isOrbiting;
 }
 
 ////////// HELPER CODE ///////////
@@ -501,7 +394,7 @@ void GLRenderer::updateCamera() {
 /**
   Draws text for the FPS and screenshot prompt
  **/
-void GLRenderer::paintText() {
+void GLRenderer::printFPS() {
     // Prints FPS and that's it
     fprintf(stdout, "FPS: %d\n", (int)(m_currentFPS + .5f));
     return;
@@ -530,7 +423,6 @@ void GLRenderer::keyPressEvent(QKeyEvent *event) {
         refresh();
         break;
     } case Qt::Key_H: {
-        m_textHidden = !m_textHidden;
         break;
     } case Qt::Key_Right: {
         m_timeMultiplier *= 1.1f;

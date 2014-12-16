@@ -4,8 +4,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    m_ui(new Ui::MainWindow)
-{
+    m_ui(new Ui::MainWindow) {
     QGLFormat qglFormat;
     qglFormat.setVersion(3,2);
     qglFormat.setProfile(QGLFormat::CoreProfile);

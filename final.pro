@@ -25,9 +25,12 @@ SOURCES += main/settings.cpp \
     particles/particle.cpp \
     particles/texquad.cpp \
     main/databinding.cpp \
-    opengl/PlanetRenderer.cpp
+    opengl/FlowersRenderer.cpp \
+    opengl/PlanetsRenderer.cpp \
+    opengl/StarsRenderer.cpp
 
 HEADERS += \
+    cs123_lib/CS123Common.h \
     main/settings.h \
     main/mainwindow.h \
     opengl/GLRenderer.h \
@@ -38,12 +41,14 @@ HEADERS += \
     shapes/sphere.h \
     shapes/cylinder.h \
     shapes/flower.h \
-    cs123_lib/CS123Common.h \
     particles/particle.h \
     particles/particleemitter.h \
     particles/texquad.h \
     main/databinding.h \
-    opengl/PlanetRenderer.h
+    cs123_lib/newmath.h \
+    opengl/FlowersRenderer.h \
+    opengl/PlanetsRenderer.h \
+    opengl/StarsRenderer.h
 
 FORMS += main/mainwindow.ui
 INCLUDEPATH += particles main glm cs123_lib shapes opengl

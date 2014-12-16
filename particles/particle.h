@@ -3,16 +3,23 @@
 
 #include "CS123Common.h"
 
-class Particle
-{
+struct __attribute__ ((aligned (16))) ParticleData {
+    float life;
+    float decay;
+    glm::vec3 color;
+    glm::vec3 pos;
+    glm::vec3 dir;
+    glm::vec3 force;
+};
+
+class Particle {
 public:
-    //Uninitialized Sphere
     Particle();
-    //Initialized Sphere
     Particle(const GLuint vertexLocation, const GLuint normalLocation);
-    // Initialize Sphere: generate VAO, vertex data, and buffer it on GPU
+
     void init(const GLuint vertexLocation, const GLuint normalLocation);
     void draw();
+
 private:
     bool m_isInitialized;
     GLuint m_vaoID;
