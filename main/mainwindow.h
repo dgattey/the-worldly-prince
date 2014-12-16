@@ -1,7 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "CS123Common.h"
 #include <QMainWindow>
+#include <QGLFormat>
+#include "GLRenderer.h"
 
 namespace Ui {
     class MainWindow;
@@ -16,7 +19,8 @@ public:
     ~MainWindow();
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow *m_ui;
+    GLRenderer* m_glWidget;
 };
 
 #endif // MAINWINDOW_H

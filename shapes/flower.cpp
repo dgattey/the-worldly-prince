@@ -2,7 +2,7 @@
 #include "shape.h"
 #include "sphere.h"
 #include "cylinder.h"
-#include "common.h"
+#include "CS123Common.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
