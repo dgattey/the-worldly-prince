@@ -1,9 +1,8 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
-#include "shape.h"
 #include "CS123Common.h"
-#include "glm.hpp"
+#include "shape.h"
 
 class Sphere : public Shape
 {

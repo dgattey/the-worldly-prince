@@ -1,8 +1,7 @@
 #ifndef FLOWER_H
 #define FLOWER_H
 
-#include "GL/glew.h"
-#include "glm/glm.hpp"
+#include "CS123Common.h"
 #include "cylinder.h"
 #include "sphere.h"
 

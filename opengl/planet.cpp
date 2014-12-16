@@ -1,6 +1,6 @@
 #include "planet.h"
 #include "resourceloader.h"
-#include "glwidget.h"
+#include "glrunner.h"
 
 #define VERTS_HIGH 48
 #define VERTS_LOW 36
@@ -29,13 +29,13 @@ void Planet::createShaderProgram() {
 }
 
 void Planet::createFBO(glm::vec2 size) {
-    GLWidget::createFBO(m_FBO, m_colorAttachment, getTextureID(), size, true);
+    GLWidget::createFBO(&m_FBO, &m_colorAttachment, getTextureID(), size, true);
 }
 
 void Planet::render(Transforms trans, glm::mat4x4 localizedOrbit, float rSpeed) {
     glUseProgram(m_shader);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE0+getTextureID());
     glBindTexture(GL_TEXTURE_2D, m_colorAttachment);
     glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -1,10 +1,9 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
-#include <GL/glew.h>
+#include "CS123Common.h"
 #include <QGLWidget>
 #include <QTimer>
 #include "camera.h"
-#include "CS123Common.h"
 #include "transforms.h"
 #include "texquad.h"
 #include "particle.h"
@@ -66,7 +65,7 @@ public:
     ~GLWidget();
 
     void updateCamera();
-    static void createFBO(GLuint fbo, GLuint colorAttach, int texId, glm::vec2 size, bool depth);
+    static void createFBO(GLuint *fbo, GLuint *colorAttach, int texId, glm::vec2 size, bool depth);
 
 protected:
     void initializeGL();
@@ -99,7 +98,7 @@ protected slots:
     void tick();
 
 private:
-    LabCamera m_camera;
+    Camera m_camera;
     Transforms m_transform;
     TexQuad m_texquad;
     Particle m_particle;

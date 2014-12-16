@@ -1,24 +1,19 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <glm/glm.hpp>
-
+#include "CS123Common.h"
 #include <QMouseEvent>
-//#include "vector.h"
-
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
 
 /**
     A basic camera
 */
 // "near" and "far" used to be pointer modifiers in 16-bit DOS, and
 // apparently are still #defined in <windows.h>
-// #undef-ing them allows the lab to compile in Windows. Hooray for Windows!
+// #undef-ing them allows the project to compile in Windows. Hooray for Windows!
 #undef near
 #undef far
 
-struct LabCamera {
+struct Camera {
     glm::vec3 eye, center, up;
     float fovy, near, far;
 

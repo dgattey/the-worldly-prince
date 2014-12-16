@@ -1,7 +1,7 @@
 #ifndef TRANSFORMS_H
 #define TRANSFORMS_H
 
-#include <glm/glm.hpp>
+#include "CS123Common.h"
 
 class Transforms
 {

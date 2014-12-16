@@ -1,6 +1,6 @@
 #ifndef SHADER_H
 #define SHADER_H
-#include <GL/glew.h>
+#include "CS123Common.h"
 
 class ResourceLoader
 {

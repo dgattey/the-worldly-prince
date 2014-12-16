@@ -1,10 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
 #include "CS123Common.h"
+#include <QMainWindow>
 #include <QGLFormat>
-#include "glwidget.h"
+#include "glrunner.h"
 
 namespace Ui {
     class MainWindow;

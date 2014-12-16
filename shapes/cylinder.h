@@ -1,7 +1,7 @@
 #ifndef CYLINDER_H
 #define CYLINDER_H
 
-#include "GL/glew.h"
+#include "CS123Common.h"
 #include "shape.h"
 
 class Cylinder : public Shape

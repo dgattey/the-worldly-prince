@@ -1,7 +1,7 @@
 #ifndef TEXQUAD_H
 #define TEXQUAD_H
 
-#include "GL/glew.h"
+#include "CS123Common.h"
 
 class TexQuad
 {

@@ -1,5 +1,5 @@
 QT += core gui opengl
-TARGET = final
+TARGET = "The Little Prince"
 TEMPLATE = app
 
 unix:!macx {
@@ -11,30 +11,29 @@ macx {
     QMAKE_CXXFLAGS_X86_64 = $$QMAKE_CFLAGS_X86_64
 }
 
-SOURCES += src/settings.cpp \
-    src/mainwindow.cpp \
-    src/main.cpp \
-    src/glwidget.cpp \
+SOURCES += main/settings.cpp \
+    main/mainwindow.cpp \
+    main/main.cpp \
+    opengl/glrunner.cpp \
     cs123_lib/transforms.cpp \
     cs123_lib/resourceloader.cpp \
-    src/camera.cpp \
+    main/camera.cpp \
     shapes/shape.cpp \
     shapes/sphere.cpp \
     shapes/cylinder.cpp \
     shapes/flower.cpp \
     particles/particle.cpp \
     particles/texquad.cpp \
-    src/databinding.cpp \
-    planets/planet.cpp
+    main/databinding.cpp \
+    opengl/planet.cpp
 
 HEADERS += \
-    src/settings.h \
-    src/mainwindow.h \
-    src/glwidget.h \
-    src/camera.h \
+    main/settings.h \
+    main/mainwindow.h \
+    opengl/glrunner.h \
+    main/camera.h \
     cs123_lib/transforms.h \
     cs123_lib/resourceloader.h \
-    src/newmath.h \
     shapes/shape.h \
     shapes/sphere.h \
     shapes/cylinder.h \
@@ -43,12 +42,12 @@ HEADERS += \
     particles/particle.h \
     particles/particleemitter.h \
     particles/texquad.h \
-    src/databinding.h \
-    planets/planet.h
+    main/databinding.h \
+    opengl/planet.h
 
-FORMS += src/mainwindow.ui
-INCLUDEPATH += particles src glm cs123_lib shapes planets
-DEPENDPATH += particles src glm cs123_lib shapes planets
+FORMS += main/mainwindow.ui
+INCLUDEPATH += particles main glm cs123_lib shapes opengl
+DEPENDPATH += particles main glm cs123_lib shapes opengl
 DEFINES += TIXML_USE_STL
 
 OTHER_FILES += \

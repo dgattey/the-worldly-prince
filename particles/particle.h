@@ -1,7 +1,7 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
-#include "GL/glew.h"
+#include "CS123Common.h"
 
 class Particle
 {

@@ -1,6 +1,7 @@
 #include "CS123Common.h"
-#include "glwidget.h"
+#include "glrunner.h"
 #include "settings.h"
+#include "newmath.h"
 #include <iostream>
 
 #include <QFileDialog>
@@ -8,7 +9,6 @@
 #include <QWheelEvent>
 #include <QTime>
 #include <QDebug>
-#include "newmath.h"
 #include "resourceloader.h"
 
 #include <glm/glm.hpp>
@@ -172,56 +172,27 @@ void GLWidget::createShaderPrograms() {
   @param height: the viewport height
  **/
 void GLWidget::createFramebufferObjects(glm::vec2 size) {
-    //createFBO(m_starFBO, m_starColorAttachment, 0, size, false);
-    //m_planet.createFBO(size);
-    // Creates the star FBO and texture
-    glGenFramebuffers(1, &m_starFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_starFBO);
-    glActiveTexture(GL_TEXTURE0); // Texture 0 is for stars
-    glGenTextures(1, &m_starColorAttachment);
-    glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_starColorAttachment, 0);
-
-
-    // Creates the planet FBO and texture
-    glGenFramebuffers(1, m_planet.getFBO());
-    glBindFramebuffer(GL_FRAMEBUFFER, *m_planet.getFBO());
-    glActiveTexture(GL_TEXTURE1); // Texture 1 is for planet
-    glGenTextures(1, m_planet.getColorAttach());
-    glBindTexture(GL_TEXTURE_2D, *m_planet.getColorAttach());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *m_planet.getColorAttach(), 0);
-
-    // Needed to do depth on planet
-    GLuint planetDepth;
-    glGenRenderbuffers(1, &planetDepth);
-    glBindRenderbuffer(GL_RENDERBUFFER, planetDepth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, size.x, size.y);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, planetDepth);
+    createFBO(&m_starFBO, &m_starColorAttachment, 0, size, false);
+    m_planet.createFBO(size);
 
     // Clear
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
-void GLWidget::createFBO(GLuint fbo, GLuint colorAttach, int texID, glm::vec2 size, bool depth) {
+void GLWidget::createFBO(GLuint *fbo, GLuint *colorAttach, int texID, glm::vec2 size, bool depth) {
     int width = size.x;
     int height = size.y;
 
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glGenFramebuffers(1, fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
     glActiveTexture(GL_TEXTURE0+texID); // Texture 1 is for planet
-    glGenTextures(1, &colorAttach);
-    glBindTexture(GL_TEXTURE_2D, colorAttach);
+    glGenTextures(1, colorAttach);
+    glBindTexture(GL_TEXTURE_2D, *colorAttach);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorAttach, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *colorAttach, 0);
 
     // Setup depth if necessary
     if (!depth) return;
@@ -230,7 +201,6 @@ void GLWidget::createFBO(GLuint fbo, GLuint colorAttach, int texID, glm::vec2 si
     glBindRenderbuffer(GL_RENDERBUFFER, depthI);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthI);
-
 }
 
 void GLWidget::paintGL() {
@@ -391,7 +361,7 @@ void GLWidget::renderStarsPass()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draws stars without depth and with blending and reset
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glDepthMask(GL_FALSE);
     glEnable(GL_BLEND);
 
@@ -410,7 +380,7 @@ void GLWidget::renderFlowersPass(glm::mat4x4 localizedOrbit)
 {
     glUseProgram(m_shaderPrograms["flower"]);
     glBindFramebuffer(GL_FRAMEBUFFER, *m_planet.getFBO());
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE0+m_planet.getTextureID());
     glBindTexture(GL_TEXTURE_2D, *m_planet.getColorAttach());
 
     // Draw shapes with depth and no blending
@@ -438,7 +408,7 @@ void GLWidget::renderFinalPass()
     glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
 
     // Draw composed planet and flowers
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE0+m_planet.getTextureID());
     glBindTexture(GL_TEXTURE_2D, *m_planet.getColorAttach());
     renderTexturedQuad();
 
