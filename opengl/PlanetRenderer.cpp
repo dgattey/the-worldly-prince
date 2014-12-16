@@ -1,23 +1,24 @@
-#include "planet.h"
+#include "PlanetRenderer.h"
 #include "resourceloader.h"
-#include "glrunner.h"
+#include "sphere.h"
+#include "GLRenderer.h"
 
 #define VERTS_HIGH 48
 #define VERTS_LOW 36
 #define MOON 0
 #define EARTHMARS 1
 
-Planet::Planet() {
+PlanetRenderer::PlanetRenderer() {
     refresh();
 }
 
-Planet::~Planet() {
+PlanetRenderer::~PlanetRenderer() {
     for (int i=0; i<m_planets.size(); i++) {
         delete m_planets.at(i);
     }
 }
 
-void Planet::createShaderProgram() {
+void PlanetRenderer::createShaderProgram() {
     m_shader = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
 
     GLuint pos = glGetAttribLocation(m_shader, "position");
@@ -28,11 +29,11 @@ void Planet::createShaderProgram() {
     m_planets += Sphere::generate(VERTS_HIGH,pos,norm);
 }
 
-void Planet::createFBO(glm::vec2 size) {
-    GLWidget::createFBO(&m_FBO, &m_colorAttachment, getTextureID(), size, true);
+void PlanetRenderer::createFBO(glm::vec2 size) {
+    GLRenderer::createFBO(&m_FBO, &m_colorAttachment, getTextureID(), size, true);
 }
 
-void Planet::render(Transforms trans, glm::mat4x4 localizedOrbit, float rSpeed) {
+void PlanetRenderer::render(Transforms trans, glm::mat4x4 localizedOrbit, float rSpeed) {
     glUseProgram(m_shader);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
     glActiveTexture(GL_TEXTURE0+getTextureID());
@@ -49,27 +50,27 @@ void Planet::render(Transforms trans, glm::mat4x4 localizedOrbit, float rSpeed) 
     glUseProgram(0);
 }
 
-void Planet::refresh() {
+void PlanetRenderer::refresh() {
     randomizeSeed();
 }
 
 // GETTERS
 
-int Planet::getTextureID() {
+int PlanetRenderer::getTextureID() {
     return 1;
 }
 
-GLuint *Planet::getColorAttach() {
+GLuint *PlanetRenderer::getColorAttach() {
     return &m_colorAttachment;
 }
 
-GLuint *Planet::getFBO() {
+GLuint *PlanetRenderer::getFBO() {
     return &m_FBO;
 }
 
 // START OF PRIVATE METHODS
 
-void Planet::drawPlanets(Transforms origTrans, glm::mat4x4 localizedOrbit, float rSpeed) {
+void PlanetRenderer::drawPlanets(Transforms origTrans, glm::mat4x4 localizedOrbit, float rSpeed) {
     // Pass shared info to shader first
     glUniform1f(glGetUniformLocation(m_shader, "seed"), m_seed);
 
@@ -120,7 +121,7 @@ void Planet::drawPlanets(Transforms origTrans, glm::mat4x4 localizedOrbit, float
     m_planets.at(EARTHMARS)->render();
 }
 
-void Planet::randomizeSeed() {
+void PlanetRenderer::randomizeSeed() {
     m_seed = ((float)rand()) / ((float)RAND_MAX);
 }
 

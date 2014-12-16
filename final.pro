@@ -14,7 +14,7 @@ macx {
 SOURCES += main/settings.cpp \
     main/mainwindow.cpp \
     main/main.cpp \
-    opengl/glrunner.cpp \
+    opengl/GLRenderer.cpp \
     cs123_lib/transforms.cpp \
     cs123_lib/resourceloader.cpp \
     main/camera.cpp \
@@ -25,12 +25,12 @@ SOURCES += main/settings.cpp \
     particles/particle.cpp \
     particles/texquad.cpp \
     main/databinding.cpp \
-    opengl/planet.cpp
+    opengl/PlanetRenderer.cpp
 
 HEADERS += \
     main/settings.h \
     main/mainwindow.h \
-    opengl/glrunner.h \
+    opengl/GLRenderer.h \
     main/camera.h \
     cs123_lib/transforms.h \
     cs123_lib/resourceloader.h \
@@ -43,7 +43,7 @@ HEADERS += \
     particles/particleemitter.h \
     particles/texquad.h \
     main/databinding.h \
-    opengl/planet.h
+    opengl/PlanetRenderer.h
 
 FORMS += main/mainwindow.ui
 INCLUDEPATH += particles main glm cs123_lib shapes opengl

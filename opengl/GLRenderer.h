@@ -10,13 +10,13 @@
 #include "flower.h"
 #include "cylinder.h"
 #include "sphere.h"
-#include "planet.h"
+#include "PlanetRenderer.h"
 
 #define NUM_LIGHTS 4
 
 class QGLFramebufferObject;
 
-class GLWidget : public QGLWidget
+class GLRenderer : public QGLWidget
 {
 
     /**
@@ -61,8 +61,8 @@ class GLWidget : public QGLWidget
     Q_OBJECT
 
 public:
-    GLWidget(QGLFormat format, QWidget *parent = 0);
-    ~GLWidget();
+    GLRenderer(QGLFormat format, QWidget *parent = 0);
+    ~GLRenderer();
 
     void updateCamera();
     static void createFBO(GLuint *fbo, GLuint *colorAttach, int texId, glm::vec2 size, bool depth);
@@ -71,26 +71,13 @@ protected:
     void initializeGL();
     void paintGL();
     void resizeGL(int width, int height);
-
-    void refresh();
-
-    void createShaderPrograms();
-    void createFramebufferObjects(glm::vec2 size);
-
     void wheelEvent(QWheelEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void keyPressEvent(QKeyEvent *event);
 
-    void renderStars();
-    void renderFlowers(glm::mat4x4 localizedOrbit);
     void renderTexturedQuad();
-    void generateFlowers();
-    void initializeParticles();
-
     void renderFinalPass();
-    void renderFlowersPass(glm::mat4x4 localizedOrbit);
-    void renderStarsPass();
 
     void paintText();
 
@@ -98,6 +85,17 @@ protected slots:
     void tick();
 
 private:
+    void refresh();
+
+    void createShaderPrograms();
+    void createFramebufferObjects(glm::vec2 size);
+    void renderStars();
+    void renderFlowers(glm::mat4x4 localizedOrbit);
+    void generateFlowers();
+    void initializeParticles();
+    void renderFlowersPass(glm::mat4x4 localizedOrbit);
+    void renderStarsPass();
+
     Camera m_camera;
     Transforms m_transform;
     TexQuad m_texquad;
@@ -141,7 +139,7 @@ private:
     GLuint m_starFBO;
     GLuint m_starColorAttachment;
 
-    Planet m_planet;
+    PlanetRenderer m_planet;
 
 };
 

@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_ui->setupUi(this);
     QGridLayout *gridLayout = new QGridLayout(m_ui->centralWidget);
-    m_glWidget = new GLWidget(qglFormat, this);
+    m_glWidget = new GLRenderer(qglFormat, this);
     gridLayout->addWidget(m_glWidget, 0, 1);
     gridLayout->setContentsMargins(0,0,0,0);
     setWindowTitle("The Little Prince");

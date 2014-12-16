@@ -2,14 +2,19 @@
 #define PLANET_H
 
 #include "CS123Common.h"
-#include "sphere.h"
 
 class Transforms;
+class Sphere;
 
-class Planet {
+/**
+ * @brief Class to support rendering of arbitrary numbers of
+ * planets, using the Perlin noise shader to modulate and
+ * color them. Relies on Sphere class to actually render
+ */
+class PlanetRenderer {
 public:
-    Planet();
-    ~Planet();
+    PlanetRenderer();
+    ~PlanetRenderer();
 
     void createShaderProgram();
     void createFBO(glm::vec2 size);

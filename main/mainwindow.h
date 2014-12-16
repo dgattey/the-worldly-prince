@@ -4,7 +4,7 @@
 #include "CS123Common.h"
 #include <QMainWindow>
 #include <QGLFormat>
-#include "glrunner.h"
+#include "GLRenderer.h"
 
 namespace Ui {
     class MainWindow;
@@ -20,7 +20,7 @@ public:
 
 private:
     Ui::MainWindow *m_ui;
-    GLWidget* m_glWidget;
+    GLRenderer* m_glWidget;
 };
 
 #endif // MAINWINDOW_H

@@ -1,5 +1,5 @@
 #include "CS123Common.h"
-#include "glrunner.h"
+#include "GLRenderer.h"
 #include "settings.h"
 #include "newmath.h"
 #include <iostream>
@@ -20,7 +20,7 @@
 #define VERTSMOON 32
 #define VERTSEARTH 48
 
-GLWidget::GLWidget(QGLFormat format, QWidget *parent)
+GLRenderer::GLRenderer(QGLFormat format, QWidget *parent)
     : QGLWidget(format, parent), m_timer(this), m_fps(60.0f), m_increment(0),
       m_font("Deja Vu Sans Mono", 12, 4) {
 
@@ -67,14 +67,14 @@ GLWidget::GLWidget(QGLFormat format, QWidget *parent)
     m_timeMultiplier = 1.0f;
 }
 
-GLWidget::~GLWidget() {
+GLRenderer::~GLRenderer() {
     m_flowers.clear();
     delete m_flowerSphere;
     delete m_flowerCylinder;
     delete[] m_particleData;
 }
 
-void GLWidget::initializeGL() {
+void GLRenderer::initializeGL() {
     fprintf(stdout, "Using OpenGL Version %s\n", glGetString(GL_VERSION));
 
     //initialize glew
@@ -114,7 +114,7 @@ void GLWidget::initializeGL() {
     updateCamera();
 }
 
-void GLWidget::refresh() {
+void GLRenderer::refresh() {
     delete[] m_particleData;
     m_flowers.clear();
     initializeParticles();
@@ -122,7 +122,7 @@ void GLWidget::refresh() {
     m_planet.refresh();
 }
 
-void GLWidget::initializeParticles() {
+void GLRenderer::initializeParticles() {
     m_numParticles = 3000;
     m_particleData = new ParticleData[m_numParticles];
     for (int i = 0; i<m_numParticles; i++) {
@@ -152,7 +152,7 @@ void GLWidget::initializeParticles() {
 /**
   Create shader programs. Use the ResourceLoader new*ShaderProgram helper methods.
  **/
-void GLWidget::createShaderPrograms() {
+void GLRenderer::createShaderPrograms() {
     m_planet.createShaderProgram();
     m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/flower.vert", ":/shaders/flower.frag");
 
@@ -171,7 +171,7 @@ void GLWidget::createShaderPrograms() {
   @param width: the viewport width
   @param height: the viewport height
  **/
-void GLWidget::createFramebufferObjects(glm::vec2 size) {
+void GLRenderer::createFramebufferObjects(glm::vec2 size) {
     createFBO(&m_starFBO, &m_starColorAttachment, 0, size, false);
     m_planet.createFBO(size);
 
@@ -180,7 +180,7 @@ void GLWidget::createFramebufferObjects(glm::vec2 size) {
 }
 
 
-void GLWidget::createFBO(GLuint *fbo, GLuint *colorAttach, int texID, glm::vec2 size, bool depth) {
+void GLRenderer::createFBO(GLuint *fbo, GLuint *colorAttach, int texID, glm::vec2 size, bool depth) {
     int width = size.x;
     int height = size.y;
 
@@ -203,7 +203,7 @@ void GLWidget::createFBO(GLuint *fbo, GLuint *colorAttach, int texID, glm::vec2 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthI);
 }
 
-void GLWidget::paintGL() {
+void GLRenderer::paintGL() {
     // Get the time in seconds
     m_numFrames++;
     int time = QTime(0,0).msecsTo(QTime::currentTime());
@@ -233,7 +233,7 @@ void GLWidget::paintGL() {
 }
 
 
-void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
+void GLRenderer::renderFlowers(glm::mat4x4 localizedOrbit)
 {
     Transforms sphereTransform = m_transform;
 
@@ -271,7 +271,7 @@ void GLWidget::renderFlowers(glm::mat4x4 localizedOrbit)
     }
 }
 
-void GLWidget::renderStars() {
+void GLRenderer::renderStars() {
     glm::mat4x4 atmosphericRotation = glm::rotate(m_elapsedTime/(25.0f*m_fps), glm::vec3(7,1,8));
     for(int i =0; i<m_numParticles; i++) {
 
@@ -351,7 +351,7 @@ void GLWidget::renderStars() {
 
 }
 
-void GLWidget::renderStarsPass()
+void GLRenderer::renderStarsPass()
 {
     glUseProgram(m_shaderPrograms["star"]);
     glBindFramebuffer(GL_FRAMEBUFFER, m_starFBO);
@@ -376,7 +376,7 @@ void GLWidget::renderStarsPass()
     glUseProgram(0);
 }
 
-void GLWidget::renderFlowersPass(glm::mat4x4 localizedOrbit)
+void GLRenderer::renderFlowersPass(glm::mat4x4 localizedOrbit)
 {
     glUseProgram(m_shaderPrograms["flower"]);
     glBindFramebuffer(GL_FRAMEBUFFER, *m_planet.getFBO());
@@ -392,7 +392,7 @@ void GLWidget::renderFlowersPass(glm::mat4x4 localizedOrbit)
     glUseProgram(0);
 }
 
-void GLWidget::renderFinalPass()
+void GLRenderer::renderFinalPass()
 {
     // Draw to the screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -419,7 +419,7 @@ void GLWidget::renderFinalPass()
 }
 
 // make flower gardens!
-void GLWidget::generateFlowers()
+void GLRenderer::generateFlowers()
 {
     // the number of different types of flowers to generate
     int flowerVariety = 10;
@@ -457,7 +457,7 @@ void GLWidget::generateFlowers()
   @param w: the width of the quad to draw
   @param h: the height of the quad to draw
 **/
-void GLWidget::renderTexturedQuad() {
+void GLRenderer::renderTexturedQuad() {
     // Clamp value to edge of texture when texture index is out of bounds
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -468,7 +468,7 @@ void GLWidget::renderTexturedQuad() {
   Called when the screen gets resized.
   The camera is updated when the screen resizes because the aspect ratio may change.
 **/
-void GLWidget::resizeGL(int width, int height) {
+void GLRenderer::resizeGL(int width, int height) {
     // Set the viewport to fill the screen
     glViewport(0, 0, width, height);
 
@@ -484,7 +484,7 @@ void GLWidget::resizeGL(int width, int height) {
   It gets called in resizeGL which get called automatically on intialization
   and whenever the window is resized.
 **/
-void GLWidget::updateCamera() {
+void GLRenderer::updateCamera() {
     float w = width();
     float h = height();
 
@@ -501,7 +501,7 @@ void GLWidget::updateCamera() {
 /**
   Draws text for the FPS and screenshot prompt
  **/
-void GLWidget::paintText() {
+void GLRenderer::paintText() {
     // Prints FPS and that's it
     fprintf(stdout, "FPS: %d\n", (int)(m_currentFPS + .5f));
     return;
@@ -511,14 +511,14 @@ void GLWidget::paintText() {
   Specifies to Qt what to do when the widget needs to be updated.
   We only want to repaint the onscreen objects.
 **/
-void GLWidget::tick() {
+void GLRenderer::tick() {
     update();
 }
 
 /**
   Handles any key press from the keyboard
  **/
-void GLWidget::keyPressEvent(QKeyEvent *event) {
+void GLRenderer::keyPressEvent(QKeyEvent *event) {
     switch(event->key()) {
     case Qt::Key_S: {
         QImage qi = grabFrameBuffer(false);
@@ -554,7 +554,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
 /**
   Called when the mouse is dragged.  Rotates the camera based on mouse movement.
 **/
-void GLWidget::mouseMoveEvent(QMouseEvent *event) {
+void GLRenderer::mouseMoveEvent(QMouseEvent *event) {
     glm::vec2 pos(event->x(), event->y());
     if (event->buttons() & Qt::LeftButton || event->buttons() & Qt::RightButton)
     {
@@ -566,7 +566,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
 /**
   Record a mouse press position.
  **/
-void GLWidget::mousePressEvent(QMouseEvent *event) {
+void GLRenderer::mousePressEvent(QMouseEvent *event) {
     m_prevMousePos.x = event->x();
     m_prevMousePos.y = event->y();
 }
@@ -574,7 +574,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
 /**
   Called when the mouse wheel is turned.  Zooms the camera in and out.
 **/
-void GLWidget::wheelEvent(QWheelEvent *event) {
+void GLRenderer::wheelEvent(QWheelEvent *event) {
     if (event->orientation() == Qt::Vertical)
     {
         m_camera.mouseWheel(event->delta());
