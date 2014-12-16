@@ -113,12 +113,10 @@ float turbulence( vec3 p ) {
 }
  
 void main() {
- 
-    noise = 5.6 *  -0.018 * turbulence(0.73 * normal);
+    noise = 5.6 *  -0.018 * turbulence(0.73 * normal + seed);
     float disturbance =  pnoise(0.05 * position, vec3(100.0));
     float displacement = 1.5 * noise + disturbance;
      
     vec3 newPosition = position + normal * displacement;
     gl_Position = mvp * vec4(newPosition, 0.75);
- 
 }

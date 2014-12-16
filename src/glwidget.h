@@ -11,7 +11,7 @@
 #include "flower.h"
 #include "cylinder.h"
 #include "sphere.h"
-
+#include "planet.h"
 
 #define NUM_LIGHTS 4
 
@@ -66,6 +66,7 @@ public:
     ~GLWidget();
 
     void updateCamera();
+    static void createFBO(GLuint fbo, GLuint colorAttach, int texId, glm::vec2 size, bool depth);
 
 protected:
     void initializeGL();
@@ -75,7 +76,7 @@ protected:
     void refresh();
 
     void createShaderPrograms();
-    void createFramebufferObjects(int width, int height);
+    void createFramebufferObjects(glm::vec2 size);
 
     void wheelEvent(QWheelEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
@@ -84,14 +85,12 @@ protected:
 
     void renderStars();
     void renderFlowers(glm::mat4x4 localizedOrbit);
-    void renderPlanets(glm::mat4x4 localizedOrbit);
     void renderTexturedQuad();
     void generateFlowers();
     void initializeParticles();
 
     void renderFinalPass();
     void renderFlowersPass(glm::mat4x4 localizedOrbit);
-    void renderPlanetsPass(glm::mat4x4 localizedOrbit);
     void renderStarsPass();
 
     void paintText();
@@ -102,9 +101,6 @@ protected slots:
 private:
     LabCamera m_camera;
     Transforms m_transform;
-    Sphere m_moon;
-    Sphere m_earth;
-    Sphere m_mars;
     TexQuad m_texquad;
     Particle m_particle;
     int m_numParticles;
@@ -125,7 +121,6 @@ private:
     int m_lastUpdate;
     int m_numFrames;
     float m_currentFPS;
-    float m_shaderSeed;
     bool m_textHidden;
     float m_timeMultiplier;
 
@@ -144,11 +139,10 @@ private:
     glm::vec3 m_O_d;
     glm::vec3 m_i_a;
 
-    GLuint m_planetFBO;
-    GLuint m_planetColorAttachment;
-
     GLuint m_starFBO;
     GLuint m_starColorAttachment;
+
+    Planet m_planet;
 
 };
 

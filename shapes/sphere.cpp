@@ -13,6 +13,16 @@ Sphere::~Sphere()
     }
 }
 
+Sphere *Sphere::generate(int p, GLuint position, GLuint normal) {
+    Sphere *s = new Sphere();
+    s->init(p, position, normal);
+    return s;
+}
+
+void Sphere::init(int p, GLuint position, GLuint normal) {
+    init(p,p, position, normal);
+}
+
 void Sphere::init(int p1, int p2, const GLuint vertexLocation, const GLuint normalLocation)
 {
     m_p1 = p1;

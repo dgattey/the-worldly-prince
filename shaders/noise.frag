@@ -17,6 +17,8 @@ void main() {
     
     // Ground
     else color = colorHigh;
-    fragColor = vec4(color.xyz * (color.w + 10.0*noise), 1.0);
+
+    vec3 finalColor = color.xyz * (color.w + 10.0*noise);
+    fragColor = vec4(finalColor, 1.0);
  
 }  

@@ -9,6 +9,9 @@ MainWindow::MainWindow(QWidget *parent) :
     QGLFormat qglFormat;
     qglFormat.setVersion(3,2);
     qglFormat.setProfile(QGLFormat::CoreProfile);
+    qglFormat.setDoubleBuffer(true);
+    qglFormat.setSwapInterval(1);
+
     m_ui->setupUi(this);
     QGridLayout *gridLayout = new QGridLayout(m_ui->centralWidget);
     m_glWidget = new GLWidget(qglFormat, this);

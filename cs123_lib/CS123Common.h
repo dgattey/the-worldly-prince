@@ -16,7 +16,6 @@
 #include <QMessageBox>
 #include <vector>
 
-#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
@@ -27,6 +26,7 @@
 #ifdef __APPLE__
 #include <glu.h>
 #else
+#define GLM_FORCE_RADIANS
 #include <GL/glu.h>
 #endif
 

@@ -17,13 +17,12 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define VERTSMOON 50
-#define VERTSEARTH 120
+#define VERTSMOON 32
+#define VERTSEARTH 48
 
 GLWidget::GLWidget(QGLFormat format, QWidget *parent)
     : QGLWidget(format, parent), m_timer(this), m_fps(60.0f), m_increment(0),
-      m_font("Deja Vu Sans Mono", 12, 4)
-{
+      m_font("Deja Vu Sans Mono", 12, 4) {
 
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -62,24 +61,20 @@ GLWidget::GLWidget(QGLFormat format, QWidget *parent)
     m_O_d = glm::vec3(1.0,  1.0, 1.0);    // diffuse sphere color
     m_i_a = glm::vec3(0.25, 0.25, 0.25); // ambient light intensity
 
-    m_shaderSeed = ((float)rand()) / ((float)RAND_MAX);
-
     m_lastUpdate = QTime(0,0).msecsTo(QTime::currentTime());
     m_numFrames = 0;
     m_textHidden = false;
     m_timeMultiplier = 1.0f;
 }
 
-GLWidget::~GLWidget()
-{
+GLWidget::~GLWidget() {
     m_flowers.clear();
     delete m_flowerSphere;
     delete m_flowerCylinder;
     delete[] m_particleData;
 }
 
-void GLWidget::initializeGL()
-{
+void GLWidget::initializeGL() {
     fprintf(stdout, "Using OpenGL Version %s\n", glGetString(GL_VERSION));
 
     //initialize glew
@@ -93,7 +88,7 @@ void GLWidget::initializeGL()
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
     createShaderPrograms();
-    createFramebufferObjects(width(), height());
+    createFramebufferObjects(glm::vec2(width(), height()));
 
     // Set up the time for orbit
     m_lastTime = QTime(0,0).msecsTo(QTime::currentTime());
@@ -122,11 +117,13 @@ void GLWidget::initializeGL()
 void GLWidget::refresh() {
     delete[] m_particleData;
     m_flowers.clear();
-    initializeGL();
+    initializeParticles();
+    generateFlowers();
+    m_planet.refresh();
 }
 
 void GLWidget::initializeParticles() {
-    m_numParticles = 4000;
+    m_numParticles = 3000;
     m_particleData = new ParticleData[m_numParticles];
     for (int i = 0; i<m_numParticles; i++) {
         float x,y,z;
@@ -144,7 +141,7 @@ void GLWidget::initializeParticles() {
         m_particleData[i].decay = -1.0f;
         if (urand(0.0f,1.0f) > 0.5f)
             m_particleData[i].decay = 1.0f;
-        if (urand(0.0f,1.0f) > 0.95f) { // SHOOTING STAR!
+        if (urand(0.0f,1.0f) > 0.97f) { // SHOOTING STAR!
             m_particleData[i].color = glm::vec3(0.8f, 0.5f, 0.4f);
             m_particleData[i].dir = glm::vec3(urand(-2.0f, 2.0f),urand(-2.0f, 2.0f),urand(-2.0f, 2.0f));
         }
@@ -155,20 +152,9 @@ void GLWidget::initializeParticles() {
 /**
   Create shader programs. Use the ResourceLoader new*ShaderProgram helper methods.
  **/
-void GLWidget::createShaderPrograms()
-{
+void GLWidget::createShaderPrograms() {
+    m_planet.createShaderProgram();
     m_shaderPrograms["flower"] = ResourceLoader::loadShaders(":/shaders/flower.vert", ":/shaders/flower.frag");
-
-    m_shaderPrograms["planet"] = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
-    m_moon.init(VERTSMOON, VERTSMOON,
-                  glGetAttribLocation(m_shaderPrograms["planet"], "position"),
-                  glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
-    m_earth.init(VERTSEARTH, VERTSEARTH,
-                  glGetAttribLocation(m_shaderPrograms["planet"], "position"),
-                  glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
-    m_mars.init(VERTSEARTH, VERTSEARTH,
-                  glGetAttribLocation(m_shaderPrograms["planet"], "position"),
-                  glGetAttribLocation(m_shaderPrograms["planet"], "normal"));
 
     m_shaderPrograms["tex"] = ResourceLoader::loadShaders(":/shaders/tex.vert", ":/shaders/tex.frag");
     m_texquad.init(glGetAttribLocation(m_shaderPrograms["tex"], "position"),
@@ -185,8 +171,9 @@ void GLWidget::createShaderPrograms()
   @param width: the viewport width
   @param height: the viewport height
  **/
-void GLWidget::createFramebufferObjects(int width, int height)
-{
+void GLWidget::createFramebufferObjects(glm::vec2 size) {
+    //createFBO(m_starFBO, m_starColorAttachment, 0, size, false);
+    //m_planet.createFBO(size);
     // Creates the star FBO and texture
     glGenFramebuffers(1, &m_starFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, m_starFBO);
@@ -195,33 +182,58 @@ void GLWidget::createFramebufferObjects(int width, int height)
     glBindTexture(GL_TEXTURE_2D, m_starColorAttachment);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_starColorAttachment, 0);
 
-    // Creates the flower FBO and texture
-    glGenFramebuffers(1, &m_planetFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
+
+    // Creates the planet FBO and texture
+    glGenFramebuffers(1, m_planet.getFBO());
+    glBindFramebuffer(GL_FRAMEBUFFER, *m_planet.getFBO());
     glActiveTexture(GL_TEXTURE1); // Texture 1 is for planet
-    glGenTextures(1, &m_planetColorAttachment);
-    glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
+    glGenTextures(1, m_planet.getColorAttach());
+    glBindTexture(GL_TEXTURE_2D, *m_planet.getColorAttach());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_planetColorAttachment, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *m_planet.getColorAttach(), 0);
 
     // Needed to do depth on planet
     GLuint planetDepth;
     glGenRenderbuffers(1, &planetDepth);
     glBindRenderbuffer(GL_RENDERBUFFER, planetDepth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, size.x, size.y);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, planetDepth);
 
     // Clear
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void GLWidget::paintGL()
-{
+
+void GLWidget::createFBO(GLuint fbo, GLuint colorAttach, int texID, glm::vec2 size, bool depth) {
+    int width = size.x;
+    int height = size.y;
+
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glActiveTexture(GL_TEXTURE0+texID); // Texture 1 is for planet
+    glGenTextures(1, &colorAttach);
+    glBindTexture(GL_TEXTURE_2D, colorAttach);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorAttach, 0);
+
+    // Setup depth if necessary
+    if (!depth) return;
+    GLuint depthI;
+    glGenRenderbuffers(1, &depthI);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthI);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthI);
+
+}
+
+void GLWidget::paintGL() {
     // Get the time in seconds
     m_numFrames++;
     int time = QTime(0,0).msecsTo(QTime::currentTime());
@@ -237,14 +249,15 @@ void GLWidget::paintGL()
         m_lastUpdate = time;
     }
 
-    glm::mat4x4 localizedOrbit = glm::rotate(m_elapsedTime/(2*m_fps), glm::vec3(3,3,1));
+    float rSpeed = m_elapsedTime/(1.0*m_fps);
+    glm::mat4x4 localizedOrbit = glm::rotate(rSpeed/2.0f, glm::vec3(3,3,1));
 
     renderStarsPass();
-    renderPlanetsPass(localizedOrbit);
+    m_planet.render(m_transform, localizedOrbit, rSpeed);
     renderFlowersPass(localizedOrbit);
     renderFinalPass();
 
-    //paintText();
+    paintText();
 
     updateCamera();
 }
@@ -368,53 +381,6 @@ void GLWidget::renderStars() {
 
 }
 
-void GLWidget::renderPlanets(glm::mat4x4 localizedOrbit) {
-    Transforms sphereTransform = m_transform;
-    glUniform1f(glGetUniformLocation(m_shaderPrograms["planet"], "seed"), m_shaderSeed);
-    GLuint mvp = glGetUniformLocation(m_shaderPrograms["planet"], "mvp");
-    GLuint colorLow = glGetUniformLocation(m_shaderPrograms["planet"], "colorLow");
-    GLuint colorHigh = glGetUniformLocation(m_shaderPrograms["planet"], "colorHigh");
-    GLuint threshold = glGetUniformLocation(m_shaderPrograms["planet"], "threshold");
-
-    // Moon - local orbit only, and all gray
-    glm::vec4 gray = glm::vec4(0.48, 0.48, 0.5, 0.4);
-    glUniform4fv(colorHigh, 1, &gray[0]);
-    glUniform1f(threshold, -999.0f); // Only show colorHigh
-    sphereTransform.model = localizedOrbit *
-                            m_transform.model;
-    glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
-    m_moon.render();
-
-
-    // Earth - scale, local orbit, orbit around point, blue and green
-    glm::vec4 blue = glm::vec4(0.1, 0.1, 0.7, 0.6);
-    glUniform4fv(colorLow, 1, &blue[0]);
-    glm::vec4 green = glm::vec4(0.08, 0.55, 0.25, 0.15);
-    glUniform4fv(colorHigh, 1, &green[0]);
-    glUniform1f(threshold, 1.72f);
-    sphereTransform.model = glm::rotate(m_elapsedTime/(4*m_fps), glm::vec3(0,1,0)) *
-                            glm::translate(glm::vec3(7, 0, 17)) *
-                            glm::rotate(-m_elapsedTime/(2*m_fps), glm::vec3(1,2,4)) *
-                            glm::scale(glm::vec3(3.3f)) *
-                            m_transform.model;
-    glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
-    m_earth.render();
-
-    // Mars - scale, local orbit, orbit around point, red and maroon
-    glm::vec4 red = glm::vec4(0.6, 0.25, 0.15, 0.3);
-    glUniform4fv(colorLow, 1, &red[0]);
-    glm::vec4 maroon = glm::vec4(0.4, 0.2, 0.2, 0.3);
-    glUniform4fv(colorHigh, 1, &maroon[0]);
-    glUniform1f(threshold, 1.32f);
-    sphereTransform.model = glm::rotate(m_elapsedTime/(3.6f*m_fps), glm::vec3(0,1,0)) *
-                            glm::translate(glm::vec3(-40, 0, 20)) *
-                            glm::rotate(-m_elapsedTime/(2*m_fps), glm::vec3(0,3,1)) *
-                            glm::scale(glm::vec3(3.6f)) *
-                            m_transform.model;
-    glUniformMatrix4fv(mvp, 1, GL_FALSE, &sphereTransform.getTransform()[0][0]);
-    m_mars.render();
-}
-
 void GLWidget::renderStarsPass()
 {
     glUseProgram(m_shaderPrograms["star"]);
@@ -425,7 +391,7 @@ void GLWidget::renderStarsPass()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draws stars without depth and with blending and reset
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glDepthMask(GL_FALSE);
     glEnable(GL_BLEND);
 
@@ -443,30 +409,12 @@ void GLWidget::renderStarsPass()
 void GLWidget::renderFlowersPass(glm::mat4x4 localizedOrbit)
 {
     glUseProgram(m_shaderPrograms["flower"]);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, *m_planet.getFBO());
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
+    glBindTexture(GL_TEXTURE_2D, *m_planet.getColorAttach());
 
     // Draw shapes with depth and no blending
     renderFlowers(localizedOrbit);
-
-    // Clear
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(0);
-}
-
-void GLWidget::renderPlanetsPass(glm::mat4x4 localizedOrbit)
-{
-    glUseProgram(m_shaderPrograms["planet"]);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_planetFBO);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Draw the planet with depth and no blending
-    renderPlanets(localizedOrbit);
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -491,7 +439,7 @@ void GLWidget::renderFinalPass()
 
     // Draw composed planet and flowers
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_planetColorAttachment);
+    glBindTexture(GL_TEXTURE_2D, *m_planet.getColorAttach());
     renderTexturedQuad();
 
     // Clear
@@ -539,8 +487,7 @@ void GLWidget::generateFlowers()
   @param w: the width of the quad to draw
   @param h: the height of the quad to draw
 **/
-void GLWidget::renderTexturedQuad()
-{
+void GLWidget::renderTexturedQuad() {
     // Clamp value to edge of texture when texture index is out of bounds
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -551,8 +498,7 @@ void GLWidget::renderTexturedQuad()
   Called when the screen gets resized.
   The camera is updated when the screen resizes because the aspect ratio may change.
 **/
-void GLWidget::resizeGL(int width, int height)
-{
+void GLWidget::resizeGL(int width, int height) {
     // Set the viewport to fill the screen
     glViewport(0, 0, width, height);
 
@@ -560,7 +506,7 @@ void GLWidget::resizeGL(int width, int height)
     updateCamera();
 
     // Resize all used textures
-    createFramebufferObjects(width, height);
+    createFramebufferObjects(glm::vec2(width, height));
 }
 
 /**
@@ -568,8 +514,7 @@ void GLWidget::resizeGL(int width, int height)
   It gets called in resizeGL which get called automatically on intialization
   and whenever the window is resized.
 **/
-void GLWidget::updateCamera()
-{
+void GLWidget::updateCamera() {
     float w = width();
     float h = height();
 
@@ -586,73 +531,52 @@ void GLWidget::updateCamera()
 /**
   Draws text for the FPS and screenshot prompt
  **/
-void GLWidget::paintText()
-{
-    if (m_textHidden) return;
-    glColor3f(1.f, 1.f, 1.f);
-
-    // QGLWidget's renderText takes xy coordinates, a string, and a font
-    renderText(10, 20, "FPS: " + QString::number((int) (m_currentFPS + .5f)), m_font);
-    renderText(10, 50, "Space: Pause", m_font);
-    renderText(10, 70, "R: Random Refresh", m_font);
-    renderText(10, 90, "Arrows: Change Speed", m_font);
-    renderText(10, 110, "H: Hide Text", m_font);
+void GLWidget::paintText() {
+    // Prints FPS and that's it
+    fprintf(stdout, "FPS: %d\n", (int)(m_currentFPS + .5f));
+    return;
 }
-
 
 /**
   Specifies to Qt what to do when the widget needs to be updated.
   We only want to repaint the onscreen objects.
 **/
-void GLWidget::tick()
-{
+void GLWidget::tick() {
     update();
 }
 
-
-//handle events from user
 /**
   Handles any key press from the keyboard
  **/
-void GLWidget::keyPressEvent(QKeyEvent *event)
-{
-    switch(event->key())
-    {
-        case Qt::Key_S:
-            {
-            QImage qi = grabFrameBuffer(false);
-            QString filter;
-            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "", tr("PNG Image (*.png)"), &filter);
-            qi.save(QFileInfo(fileName).absoluteDir().absolutePath() + "/" + QFileInfo(fileName).baseName() + ".png", "PNG", 100);
-            break;
-            }
-        case Qt::Key_R:
-            {
-            refresh();
-            break;
-            }
-        case Qt::Key_H: {
-            m_textHidden = !m_textHidden;
-            break;
-            }
-        case Qt::Key_Right: {
-            m_timeMultiplier *= 1.1f;
-            if (m_timeMultiplier > 100.0f) m_timeMultiplier = 100.0f;
-            break;
-            }
-        case Qt::Key_Left: {
-            m_timeMultiplier *= 0.9f;
-            if (m_timeMultiplier < 0.1f) m_timeMultiplier = 0.1f;
-            break;
-            }
-        case Qt::Key_Space:
-            {
-            if (!m_isOrbiting) {
-                m_lastTime = QTime(0,0).msecsTo(QTime::currentTime());
-            }
-            m_isOrbiting = !m_isOrbiting;
-            break;
-            }
+void GLWidget::keyPressEvent(QKeyEvent *event) {
+    switch(event->key()) {
+    case Qt::Key_S: {
+        QImage qi = grabFrameBuffer(false);
+        QString filter;
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "", tr("PNG Image (*.png)"), &filter);
+        qi.save(QFileInfo(fileName).absoluteDir().absolutePath() + "/" + QFileInfo(fileName).baseName() + ".png", "PNG", 100);
+        break;
+    } case Qt::Key_R: {
+        refresh();
+        break;
+    } case Qt::Key_H: {
+        m_textHidden = !m_textHidden;
+        break;
+    } case Qt::Key_Right: {
+        m_timeMultiplier *= 1.1f;
+        if (m_timeMultiplier > 100.0f) m_timeMultiplier = 100.0f;
+        break;
+    } case Qt::Key_Left: {
+        m_timeMultiplier *= 0.9f;
+        if (m_timeMultiplier < 0.1f) m_timeMultiplier = 0.1f;
+        break;
+    } case Qt::Key_Space: {
+        if (!m_isOrbiting) {
+            m_lastTime = QTime(0,0).msecsTo(QTime::currentTime());
+        }
+        m_isOrbiting = !m_isOrbiting;
+        break;
+        }
     }
 }
 
@@ -660,8 +584,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 /**
   Called when the mouse is dragged.  Rotates the camera based on mouse movement.
 **/
-void GLWidget::mouseMoveEvent(QMouseEvent *event)
-{
+void GLWidget::mouseMoveEvent(QMouseEvent *event) {
     glm::vec2 pos(event->x(), event->y());
     if (event->buttons() & Qt::LeftButton || event->buttons() & Qt::RightButton)
     {
@@ -673,8 +596,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 /**
   Record a mouse press position.
  **/
-void GLWidget::mousePressEvent(QMouseEvent *event)
-{
+void GLWidget::mousePressEvent(QMouseEvent *event) {
     m_prevMousePos.x = event->x();
     m_prevMousePos.y = event->y();
 }
@@ -682,8 +604,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 /**
   Called when the mouse wheel is turned.  Zooms the camera in and out.
 **/
-void GLWidget::wheelEvent(QWheelEvent *event)
-{
+void GLWidget::wheelEvent(QWheelEvent *event) {
     if (event->orientation() == Qt::Vertical)
     {
         m_camera.mouseWheel(event->delta());

@@ -13,7 +13,11 @@ public:
 
     ~Sphere();
 
+    // Creates initialized sphere and returns it
+    static Sphere *generate(int p, GLuint position, GLuint normal);
+
     void init(int p1, int p2, GLuint position, GLuint normal);
+    void init(int p, GLuint position, GLuint normal);
 
     void render();
 

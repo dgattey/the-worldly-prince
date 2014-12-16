@@ -24,7 +24,8 @@ SOURCES += src/settings.cpp \
     shapes/flower.cpp \
     particles/particle.cpp \
     particles/texquad.cpp \
-    src/databinding.cpp
+    src/databinding.cpp \
+    planets/planet.cpp
 
 HEADERS += \
     src/settings.h \
@@ -42,11 +43,12 @@ HEADERS += \
     particles/particle.h \
     particles/particleemitter.h \
     particles/texquad.h \
-    src/databinding.h
+    src/databinding.h \
+    planets/planet.h
 
 FORMS += src/mainwindow.ui
-INCLUDEPATH += particles src glm cs123_lib shapes
-DEPENDPATH += particles src glm cs123_lib shapes
+INCLUDEPATH += particles src glm cs123_lib shapes planets
+DEPENDPATH += particles src glm cs123_lib shapes planets
 DEFINES += TIXML_USE_STL
 
 OTHER_FILES += \
