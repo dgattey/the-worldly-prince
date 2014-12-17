@@ -5,8 +5,6 @@
 
 #include "particle.h"
 
-#define NUMPARTICLES 3000
-
 class Particle;
 class ParticleData;
 class GLRenderer;
@@ -31,6 +29,7 @@ public:
 
 private:
     void drawStars();
+    void setupStar(int i);
 
     GLRenderer *m_renderer;
 

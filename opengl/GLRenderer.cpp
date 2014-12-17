@@ -19,9 +19,10 @@ GLRenderer::GLRenderer(QGLFormat format, QWidget *parent)
     // Set up camera
     m_camera.center = glm::vec3(0.f, 0.f, 0.f);
     m_camera.up = glm::vec3(0.f, 1.f, 0.f);
-    m_camera.zoom = 3.0f;
-    m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
-    m_camera.fovy = 60.f;
+    m_camera.zoom = M_PI * 2.0f;
+    m_camera.theta = M_PI * 1.5f;
+    m_camera.phi = 0.2f;
+    m_camera.fovy = M_PI * 0.25f;
 
     // Set up 60 FPS draw loop
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -180,13 +181,11 @@ void GLRenderer::paintGL() {
         m_lastUpdate = time;
     }
 
-    m_rotationalSpeed = m_elapsedTime/(1.0*m_fps);
-    glm::vec3 rotateAxis = glm::vec3(3,3,1);
-    glm::mat4x4 localizedOrbit = glm::rotate(m_rotationalSpeed/2.0f, rotateAxis);
+    m_rotationalSpeed = m_elapsedTime/((M_PI)*m_fps);
 
     m_stars->render();
-    m_planets->render(localizedOrbit);
-    m_flowers->render(localizedOrbit);
+    m_planets->render();
+    m_flowers->render();
     renderFinalPass();
 
     printFPS();

@@ -33,14 +33,14 @@ void FlowersRenderer::createFBO(glm::vec2 size) {
     m_colorAttachment = *m_planets->getColorAttach();
 }
 
-void FlowersRenderer::render(glm::mat4x4 orbit) {
+void FlowersRenderer::render() {
     glUseProgram(m_shader);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
     glActiveTexture(GL_TEXTURE0+getTextureID());
     glBindTexture(GL_TEXTURE_2D, m_colorAttachment);
 
     // Draws stars without depth and with blending
-    drawFlowers(orbit);
+    drawFlowers();
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -89,9 +89,10 @@ GLuint *FlowersRenderer::getFBO() {
 
 // START OF PRIVATE METHODS
 
-void FlowersRenderer::drawFlowers(glm::mat4x4 orbit) {
-    Transforms origTrans = m_renderer->getTransformation();
-    Transforms trans = origTrans;
+void FlowersRenderer::drawFlowers() {
+    float speed = m_renderer->getRotationalSpeed();
+    glm::mat4x4 orbit = m_planets->getMoonTransformation(speed);
+    Transforms trans = m_renderer->getTransformation();
 
     // iterate through each of the flowers and render the components
     for (int i=0; i<m_flowers.size(); i++) {

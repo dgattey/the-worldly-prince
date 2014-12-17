@@ -20,7 +20,7 @@ public:
 
     void createShaderProgram();
     void createFBO(glm::vec2 size);
-    void render(glm::mat4x4 orbit);
+    void render();
     void refresh();
 
     int getTextureID();
@@ -28,7 +28,7 @@ public:
     GLuint *getFBO();
 
 private:
-    void drawFlowers(glm::mat4x4 orbit);
+    void drawFlowers();
 
     GLRenderer *m_renderer;
     PlanetsRenderer *m_planets;

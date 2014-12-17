@@ -1,15 +1,23 @@
 #include "PlanetsRenderer.h"
 #include "resourceloader.h"
 #include "sphere.h"
+#include "newmath.h"
 #include "GLRenderer.h"
 
 #define VERTS_HIGH 48
 #define VERTS_LOW 36
 #define MOON 0
 #define EARTHMARS 1
+#define EARTH 1
+#define MARS 2
 
 PlanetsRenderer::PlanetsRenderer(GLRenderer *renderer) {
     m_renderer = renderer;
+
+    // Moon, Earth, then Mars - see header for order of arguments
+    m_planetTransformations += PlanetTransformation(1.0f, glm::vec3(1, 1, 0), 20.f, 500.f, glm::vec3(0));
+    m_planetTransformations += PlanetTransformation(4.3f, glm::vec3(0,3,1), 25.f, 75.f, glm::vec3(10, 0, 15));
+    m_planetTransformations += PlanetTransformation(3.6f, glm::vec3(0,3,1), 20.f, 70.f, glm::vec3(-30, 0, 30));
 }
 
 PlanetsRenderer::~PlanetsRenderer() {
@@ -32,7 +40,7 @@ void PlanetsRenderer::createFBO(glm::vec2 size) {
     GLRenderer::createFBO(&m_FBO, &m_colorAttachment, getTextureID(), size, true);
 }
 
-void PlanetsRenderer::render(glm::mat4x4 orbit) {
+void PlanetsRenderer::render() {
     glUseProgram(m_shader);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
     glActiveTexture(GL_TEXTURE0+getTextureID());
@@ -41,7 +49,7 @@ void PlanetsRenderer::render(glm::mat4x4 orbit) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw the planet with depth and no blending
-    drawPlanets(orbit);
+    drawPlanets();
 
     // Clear
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -67,16 +75,19 @@ GLuint *PlanetsRenderer::getFBO() {
     return &m_FBO;
 }
 
+glm::mat4x4 PlanetsRenderer::getMoonTransformation(float speed) {
+    return applyPlanetTrans(speed, m_planetTransformations.at(MOON));
+}
+
 // START OF PRIVATE METHODS
 
-void PlanetsRenderer::drawPlanets(glm::mat4x4 orbit) {
-    Transforms origTrans = m_renderer->getTransformation();
+void PlanetsRenderer::drawPlanets() {
+    Transforms trans = m_renderer->getTransformation();
     float speed = m_renderer->getRotationalSpeed();
 
     // Pass shared info to shader first
     glUniform1f(glGetUniformLocation(m_shader, "seed"), m_seed);
 
-    Transforms trans = origTrans;
     GLuint mvp = glGetUniformLocation(m_shader, "mvp");
     GLuint colorLow = glGetUniformLocation(m_shader, "colorLow");
     GLuint colorHigh = glGetUniformLocation(m_shader, "colorHigh");
@@ -84,46 +95,44 @@ void PlanetsRenderer::drawPlanets(glm::mat4x4 orbit) {
 
     // Colors
     glm::vec4 gray = glm::vec4(0.48, 0.48, 0.5, 0.4);
-    glm::vec4 blue = glm::vec4(0.1, 0.1, 0.7, 0.6);
+    glm::vec4 blue = glm::vec4(0.2, 0.3, 0.8, 0.45);
     glm::vec4 green = glm::vec4(0.08, 0.55, 0.25, 0.15);
     glm::vec4 red = glm::vec4(0.6, 0.25, 0.15, 0.3);
     glm::vec4 maroon = glm::vec4(0.4, 0.2, 0.2, 0.3);
 
-    // Moon - local orbit only, and all gray
+    // Moon - gray color and day orbit only
+    trans.model = applyPlanetTrans(speed, m_planetTransformations.at(MOON));
     glUniform4fv(colorHigh, 1, &gray[0]);
     glUniform1f(threshold, -999.0f); // Only show colorHigh
-    trans.model = orbit *
-                  origTrans.model;
     glUniformMatrix4fv(mvp, 1, GL_FALSE, &trans.getTransform()[0][0]);
     m_planets.at(MOON)->render();
 
-
-    // Earth - scale, local orbit, orbit around point, blue and green
+    // Earth - blue and green color, both day and year type orbit
+    trans.model = applyPlanetTrans(speed, m_planetTransformations.at(EARTH));
     glUniform4fv(colorLow, 1, &blue[0]);
     glUniform4fv(colorHigh, 1, &green[0]);
     glUniform1f(threshold, 1.72f);
-    trans.model = glm::rotate(speed/4.0f, glm::vec3(0,1,0)) *
-                  glm::translate(glm::vec3(7, 0, 17)) *
-                  glm::rotate(-speed/2.0f, glm::vec3(1,2,4)) *
-                  glm::scale(glm::vec3(3.3f)) *
-                  origTrans.model;
     glUniformMatrix4fv(mvp, 1, GL_FALSE, &trans.getTransform()[0][0]);
     m_planets.at(EARTHMARS)->render();
 
-    // Mars - scale, local orbit, orbit around point, red and maroon
+    // Mars - red and maroon color, both day and year type orbit
+    trans.model = applyPlanetTrans(speed, m_planetTransformations.at(MARS));
     glUniform4fv(colorLow, 1, &red[0]);
     glUniform4fv(colorHigh, 1, &maroon[0]);
     glUniform1f(threshold, 1.32f);
-    trans.model = glm::rotate(speed/3.6f, glm::vec3(0,1,0)) *
-                  glm::translate(glm::vec3(-40, 0, 20)) *
-                  glm::rotate(-speed/2.0f, glm::vec3(0,3,1)) *
-                  glm::scale(glm::vec3(3.6f)) *
-                  origTrans.model;
     glUniformMatrix4fv(mvp, 1, GL_FALSE, &trans.getTransform()[0][0]);
     m_planets.at(EARTHMARS)->render();
 }
 
+glm::mat4x4 PlanetsRenderer::applyPlanetTrans(float speed, PlanetTransformation trans) {
+    return glm::rotate(speed/trans.year, glm::vec3(0,1,0)) *
+           glm::translate(trans.place) *
+           glm::rotate(speed/trans.day, trans.tilt) *
+           glm::scale(glm::vec3(trans.size)) *
+           m_renderer->getTransformation().model;
+}
+
 void PlanetsRenderer::randomizeSeed() {
-    m_seed = ((float)rand()) / ((float)RAND_MAX);
+    m_seed = frandN();
 }
 

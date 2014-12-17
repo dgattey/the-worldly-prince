@@ -19,6 +19,6 @@ void main() {
     else color = colorHigh;
 
     vec3 finalColor = color.xyz * (color.w + 10.0*noise);
-    fragColor = vec4(finalColor, 1.0);
+    fragColor = vec4(finalColor*1.25f, 1.0);
  
 }  
