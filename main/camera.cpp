@@ -2,8 +2,7 @@
 #include <qgl.h>
 #include "newmath.h"
 
-void Camera::mouseMove(const glm::vec2 &delta)
-{
+void Camera::mouseMove(const glm::vec2 &delta) {
     // Rotate the eye vector around the origin
     theta += delta.x * 0.01f;
     phi += delta.y * 0.01f;
@@ -13,7 +12,8 @@ void Camera::mouseMove(const glm::vec2 &delta)
     phi = maxN(0.01f - M_PI / 2, minN(M_PI / 2 - 0.01f, phi));
 }
 
-void Camera::mouseWheel(float delta)
-{
-    zoom *= powf(0.999f, delta);
+void Camera::mouseWheel(float delta) {
+    zoom *= powf(0.9995f, delta);
+    if (zoom > zoomLimitHigh) zoom = zoomLimitHigh;
+    else if (zoom < zoomLimitLow) zoom = zoomLimitLow;
 }

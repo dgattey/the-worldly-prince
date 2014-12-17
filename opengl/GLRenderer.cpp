@@ -20,6 +20,8 @@ GLRenderer::GLRenderer(QGLFormat format, QWidget *parent)
     m_camera.center = glm::vec3(0.f, 0.f, 0.f);
     m_camera.up = glm::vec3(0.f, 1.f, 0.f);
     m_camera.zoom = M_PI * 2.0f;
+    m_camera.zoomLimitLow = 1.5f;
+    m_camera.zoomLimitHigh = 300;
     m_camera.theta = M_PI * 1.5f;
     m_camera.phi = 0.2f;
     m_camera.fovy = M_PI * 0.25f;

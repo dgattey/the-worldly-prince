@@ -6,10 +6,12 @@
 
 #define VERTS_HIGH 48
 #define VERTS_LOW 36
+#define PLANET1 0
+#define PLANET2 1
 #define MOON 0
-#define EARTHMARS 1
 #define EARTH 1
 #define MARS 2
+#define SUN 3
 
 PlanetsRenderer::PlanetsRenderer(GLRenderer *renderer) {
     m_renderer = renderer;
@@ -18,20 +20,26 @@ PlanetsRenderer::PlanetsRenderer(GLRenderer *renderer) {
     // Moon
     c = PlanetColor(glm::vec4(),
                     glm::vec4(0.48, 0.48, 0.5, 0.4), // high - gray
-                    -999.f, MOON);
+                    -999.f, PLANET1);
     m_planetData += PlanetData(1.0f, glm::vec3(1, 1, 0), 20.f, 500.f, glm::vec3(0), c);
 
     // Earth
     c = PlanetColor(glm::vec4(0.2, 0.3, 0.8, 0.45), // water - blue
                     glm::vec4(0.08, 0.55, 0.25, 0.15), // earth - green
-                    1.72, EARTHMARS);
+                    1.72, PLANET2);
     m_planetData += PlanetData(4.3f, glm::vec3(0,3,1), 25.f, 75.f, glm::vec3(10, 0, 15), c);
 
     // Mars
     c = PlanetColor(glm::vec4(0.6, 0.25, 0.15, 0.3), // red
                     glm::vec4(0.4, 0.2, 0.2, 0.3), // maroon
-                    1.32, EARTHMARS);
+                    1.32, PLANET2);
     m_planetData += PlanetData(3.6f, glm::vec3(0,3,1), 20.f, 70.f, glm::vec3(-30, 0, 30), c);
+
+    // Sun
+    c = PlanetColor(glm::vec4(),
+                    glm::vec4(0.7, 0.5, 0, 0.8), // yellow
+                    -999.f, PLANET2);
+    m_planetData += PlanetData(20.f, glm::vec3(3,0,1), 40.f, 140.f, glm::vec3(-80, 0, 100), c);
 }
 
 PlanetsRenderer::~PlanetsRenderer() {
@@ -45,7 +53,7 @@ void PlanetsRenderer::createShaderProgram() {
     GLuint pos = glGetAttribLocation(m_shader, "position");
     GLuint norm = glGetAttribLocation(m_shader, "normal");
 
-    // Order is moon, earth/mars
+    // Order is moon, earth/mars/sun
     m_planets += Sphere::generate(VERTS_LOW,pos,norm);
     m_planets += Sphere::generate(VERTS_HIGH,pos,norm);
 }

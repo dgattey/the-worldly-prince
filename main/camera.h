@@ -19,6 +19,8 @@ struct Camera {
 
     float theta, phi;
     float zoom;
+    float zoomLimitHigh;
+    float zoomLimitLow;
 
     void mouseMove(const glm::vec2 &delta);
     void mouseWheel(float delta);
