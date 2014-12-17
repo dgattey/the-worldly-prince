@@ -1,11 +1,8 @@
 #ifndef PARTICLEEMITTER_H
 #define PARTICLEEMITTER_H
-#include <GL/glew.h>
-#include "common.h"
-#include "glm/glm.hpp"
-#include "cs123_lib/transforms.h"
-//#include "GL/gl.h"
-//#include <QtOpenGL>
+
+#include "CS123Common.h"
+#include "transforms.h"
 
 class ParticleEmitter
 {

@@ -1,8 +1,7 @@
 #ifndef SHAPE_H
 #define SHAPE_H
 
-#include "GL/glew.h"
-#include "glm/glm.hpp"
+#include "CS123Common.h"
 
 class Shape
 {

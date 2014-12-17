@@ -1,9 +1,8 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
+#include "CS123Common.h"
 #include "shape.h"
-#include "GL/glu.h"
-#include "glm.hpp"
 
 class Sphere : public Shape
 {
@@ -13,7 +12,11 @@ public:
 
     ~Sphere();
 
+    // Creates initialized sphere and returns it
+    static Sphere *generate(int p, GLuint position, GLuint normal);
+
     void init(int p1, int p2, GLuint position, GLuint normal);
+    void init(int p, GLuint position, GLuint normal);
 
     void render();
 
