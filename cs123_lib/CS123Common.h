@@ -7,6 +7,7 @@
 #ifndef __CS123COMMON_H__
 #define __CS123COMMON_H__
 
+#define GLM_FORCE_RADIANS
 #include "GL/glew.h"
 #include <math.h>
 #include <stdio.h>
@@ -26,7 +27,6 @@
 #ifdef __APPLE__
 #include <glu.h>
 #else
-#define GLM_FORCE_RADIANS
 #include <GL/glu.h>
 #endif
 
