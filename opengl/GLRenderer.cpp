@@ -28,11 +28,11 @@ GLRenderer::GLRenderer(QGLFormat format, QWidget *parent)
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
 
     // Start the timer for updating the screen
-    m_timer.start(1000.0f / m_fps);
     m_lastUpdate = QTime(0,0).msecsTo(QTime::currentTime());
     m_numFrames = 0;
     m_timeMultiplier = 1.0f; // Standard speed
     m_isOrbiting = true; // Rotates the scene
+    m_timer.start(1000.0f / m_fps);
 
     // Set up renderers
     m_stars = new StarsRenderer(this);

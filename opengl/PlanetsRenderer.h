@@ -13,16 +13,30 @@ class GLRenderer;
  * color them. Relies on Sphere class to actually render
  */
 class PlanetsRenderer {
+
+    // Represents the color applied to a planet along with its index in a shape list
+    struct PlanetColor {
+        PlanetColor() {}
+        PlanetColor(glm::vec4 l, glm::vec4 h, float t, int i) :
+            low(l), high(h), threshold(t), shapeIndex(i) {}
+
+        glm::vec4 low;
+        glm::vec4 high;
+        float threshold;
+        int shapeIndex;
+    };
+
     // Represents the constant transformation for a planet
-    struct PlanetTransformation {
-        PlanetTransformation(float s, glm::vec3 t, float d, float y, glm::vec3 p) :
-            size(s), tilt(t), day(d), year(y), place(p) {}
+    struct PlanetData {
+        PlanetData(float s, glm::vec3 t, float d, float y, glm::vec3 p, PlanetColor col) :
+            size(s), tilt(t), day(d), year(y), place(p), c(col) {}
 
         float size;
         glm::vec3 tilt;
         float day;
         float year;
         glm::vec3 place;
+        PlanetColor c;
     };
 
 public:
@@ -42,7 +56,7 @@ public:
 private:
     void drawPlanets();
     void randomizeSeed();
-    glm::mat4x4 applyPlanetTrans(float speed, PlanetTransformation trans);
+    glm::mat4x4 applyPlanetTrans(float speed, PlanetData trans);
 
     GLRenderer *m_renderer;
 
@@ -56,7 +70,7 @@ private:
 
     // Objects
     QList<Sphere*> m_planets;
-    QList<PlanetTransformation> m_planetTransformations;
+    QList<PlanetData> m_planetData;
 
 };
 
