@@ -2,10 +2,9 @@
 #define STARSRENDERER_H
 
 #include "CS123Common.h"
+#include "Renderer.h"
+#include "particle.h" // Must be included here
 
-#include "particle.h"
-
-class Particle;
 class ParticleData;
 class GLRenderer;
 
@@ -13,7 +12,7 @@ class GLRenderer;
  * @brief Class to support rendering of arbitrary numbers of
  * stars, using particles to actually draw them
  */
-class StarsRenderer { 
+class StarsRenderer : public Renderer {
 public:
     StarsRenderer(GLRenderer *renderer);
     ~StarsRenderer();
@@ -30,13 +29,6 @@ public:
 private:
     void drawStars();
     void setupStar(int i);
-
-    GLRenderer *m_renderer;
-
-    // GL needs
-    GLuint m_FBO;
-    GLuint m_shader;
-    GLuint m_colorAttachment;
 
     // Objects
     Particle m_particle;

@@ -2,6 +2,7 @@
 #define PLANET_H
 
 #include "CS123Common.h"
+#include "Renderer.h"
 
 class Transforms;
 class Sphere;
@@ -12,7 +13,7 @@ class GLRenderer;
  * planets, using the Perlin noise shader to modulate and
  * color them. Relies on Sphere class to actually render
  */
-class PlanetsRenderer {
+class PlanetsRenderer : public Renderer {
 
     // Represents the color applied to a planet along with its index in a shape list
     struct PlanetColor {
@@ -51,19 +52,13 @@ public:
     int getTextureID();
     GLuint *getColorAttach();
     GLuint *getFBO();
+
     glm::mat4x4 getMoonTransformation(float speed);
 
 private:
     void drawPlanets();
     void randomizeSeed();
     glm::mat4x4 applyPlanetTrans(float speed, PlanetData trans);
-
-    GLRenderer *m_renderer;
-
-    // GL needs
-    GLuint m_FBO;
-    GLuint m_shader;
-    GLuint m_colorAttachment;
 
     // For shaders
     float m_seed;

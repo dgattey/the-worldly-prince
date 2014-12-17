@@ -48,7 +48,8 @@ HEADERS += \
     cs123_lib/newmath.h \
     opengl/FlowersRenderer.h \
     opengl/PlanetsRenderer.h \
-    opengl/StarsRenderer.h
+    opengl/StarsRenderer.h \
+    opengl/Renderer.h
 
 FORMS += main/mainwindow.ui
 INCLUDEPATH += particles main glm cs123_lib shapes opengl
