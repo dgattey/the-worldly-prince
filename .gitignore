@@ -27,8 +27,5 @@
 *.out
 *.app
 *.user
-moc*.cpp
-qrc*.cpp
-ui_mainwindow.h
+build/*
 .qmake.stash
-Makefile
