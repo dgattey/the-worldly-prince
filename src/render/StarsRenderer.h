@@ -28,11 +28,16 @@ public:
 
 private:
     void drawStars();
+    void drawBody(int i, float angle, glm::vec3 axis);
+    void drawTail(int i, float angle, glm::vec3 axis);
+    void calculateData(int i);
     void setupStar(int i);
+    bool isShootingStar(int i);
+    glm::mat4x4 getAtmosphericRotation();
 
     // Objects
     Particle m_particle;
-    ParticleData *m_particleData;
+    ParticleData *m_starData;
 };
 
 #endif // STARSRENDERER_H
