@@ -17,7 +17,7 @@ struct CameraData {
 // Default initializer for camera data
 const struct CameraData CAMERA_DATA_INITIALIZER = {
     glm::vec3(), glm::vec3(), glm::vec3(0.0f, 1.0f, 0.0f),
-    1.0f, 0.0f, 0.0f,
+    1.0f, 0.1f, 1.0f,
     0.0f, 0.0f,
     10.0f, 100.0f, 1.0f
 };

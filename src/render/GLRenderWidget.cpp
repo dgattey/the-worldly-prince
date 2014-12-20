@@ -71,8 +71,10 @@ void GLRenderWidget::initializeGL() {
     data.zoomMin = 1.5f;
     data.zoomMax = 300.0f;
     data.theta = M_PI * 1.5f;
-    data.phi = 0.2f;
+    data.phi = 0.5f;
     data.fovy = M_PI * 0.25f;
+    data.near = 0.1f;
+    data.far = 1000.0f;
     m_camera.init(data);
     updateCamera(); // sets eye
 }

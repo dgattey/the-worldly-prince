@@ -17,12 +17,14 @@ Camera::~Camera() {}
 void Camera::init(CameraData data) {
     m_center = data.center;
     m_up = data.up;
+    m_near = data.near;
+    m_far = data.far;
+    m_fovy = data.fovy;
+    m_theta = data.theta;
+    m_phi = data.phi;
     m_zoom = data.zoom;
     m_zoomMin = data.zoomMin;
     m_zoomMax = data.zoomMax;
-    m_theta = data.theta;
-    m_phi = data.phi;
-    m_fovy = data.fovy;
 }
 
 /**
@@ -56,13 +58,13 @@ void Camera::zoom(float delta) {
 CameraData Camera::getData() {
     CameraData ret;
     ret.center = m_center;
+    ret.up = m_up;
     ret.eye = m_eye;
+    ret.near = m_near;
     ret.far = m_far;
     ret.fovy = m_fovy;
-    ret.near = m_near;
     ret.phi = m_phi;
     ret.theta = m_theta;
-    ret.up = m_up;
     ret.zoom = m_zoom;
     ret.zoomMax = m_zoomMax;
     ret.zoomMin = m_zoomMin;
