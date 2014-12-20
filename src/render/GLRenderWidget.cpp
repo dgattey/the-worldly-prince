@@ -11,6 +11,17 @@
 #include <QTime>
 #include <QDebug>
 
+#define MAXMULT 100.0f
+#define MINMULT 0.1f
+
+/**
+ * @brief Sets up the widget for use
+ * Creates a timer that ticks at 60 FPS to draw. Creates renderers
+ * for all objects in the scene (stars, planets, and flowers). Also
+ * sets values like mouse tracking that we need.
+ * @param format
+ * @param parent
+ */
 GLRenderWidget::GLRenderWidget(QGLFormat format, QWidget *parent)
     : QGLWidget(format, parent), m_timer(this), m_fps(60.0f), m_increment(0) {
     setFocusPolicy(Qt::StrongFocus);
@@ -25,23 +36,22 @@ GLRenderWidget::GLRenderWidget(QGLFormat format, QWidget *parent)
     m_timeMultiplier = 1.0f; // Standard speed
     m_isOrbiting = true; // Rotates the scene
     m_timer.start(1000.0f / m_fps);
-
-    // Set up renderers
-    m_stars = new StarsRenderer(this);
-    m_planets = new PlanetsRenderer(this);
-    m_flowers  = new FlowersRenderer(m_planets, this);
 }
 
+/**
+ * @brief Deletes the other renderers
+ */
 GLRenderWidget::~GLRenderWidget() {
     delete m_stars;
     delete m_planets;
     delete m_flowers;
 }
 
-////////// INITIALIZATION //////////
-
+/**
+ * @brief Creates a GLEW instance, all data, the camera, and relevant GL info/calls
+ */
 void GLRenderWidget::initializeGL() {
-    // Set up OpenGL with shaders and FBOs
+    // Set up OpenGL
     glewExperimental = GL_TRUE;
     fprintf(stdout, "Using OpenGL Version %s\n", glGetString(GL_VERSION));
     GLuint err = glewInit();
@@ -49,6 +59,13 @@ void GLRenderWidget::initializeGL() {
       fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+
+    // Set up renderers
+    m_stars = new StarsRenderer(this);
+    m_planets = new PlanetsRenderer(this);
+    m_flowers  = new FlowersRenderer(m_planets, this);
+
+    // Set up the shader programs and FBOs
     createShaderPrograms();
     createFramebufferObjects(glm::vec2(width(), height()));
 
@@ -71,7 +88,6 @@ void GLRenderWidget::initializeGL() {
     data.zoomMin = 1.5f;
     data.zoomMax = 300.0f;
     data.theta = M_PI * 1.5f;
-    data.phi = 0.5f;
     data.fovy = M_PI * 0.25f;
     data.near = 0.1f;
     data.far = 1000.0f;
@@ -79,12 +95,18 @@ void GLRenderWidget::initializeGL() {
     updateCamera(); // sets eye
 }
 
+/**
+ * @brief Refreshes all renders
+ */
 void GLRenderWidget::refresh() {
     m_stars->refresh();
     m_planets->refresh();
     m_flowers->refresh();
 }
 
+/**
+ * @brief Creates all renderers' shader programs plus the composition one
+ */
 void GLRenderWidget::createShaderPrograms() {
     fprintf(stdout, "\nCompiling all shaders...\n");
     m_stars->createShaderProgram();
@@ -98,10 +120,9 @@ void GLRenderWidget::createShaderPrograms() {
 }
 
 /**
-  Allocate framebuffer objects.
-
-  @param width: the viewport width
-  @param height: the viewport height
+ * Allocates framebuffer objects for all renderers
+ * @param width The viewport width
+ * @param height The viewport height
  **/
 void GLRenderWidget::createFramebufferObjects(glm::vec2 size) {
     m_stars->createFBO(size);
@@ -112,6 +133,14 @@ void GLRenderWidget::createFramebufferObjects(glm::vec2 size) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+/**
+ * @brief Allows a subclass or renderer to create an FBO based on passed in data
+ * @param fbo The pointer to create the FBO at
+ * @param colorAttach The pointer to create the color attachment at
+ * @param texID The ID of the texture, 0 to GL_TEXTURE_MAX_AMOUNT
+ * @param size The size of the FBO
+ * @param depth If depth should also be generated
+ */
 void GLRenderWidget::createFBO(GLuint *fbo, GLuint *colorAttach, int texID, glm::vec2 size, bool depth) {
     int width = size.x;
     int height = size.y;
@@ -135,8 +164,11 @@ void GLRenderWidget::createFBO(GLuint *fbo, GLuint *colorAttach, int texID, glm:
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthI);
 }
 
-////////// PAINTING //////////
-
+/**
+ * @brief Assumes rendering of prepasses and blends together renders
+ * Uses output of other renderers to textures to pass those textures to
+ * a shader to blend together as a final output
+ */
 void GLRenderWidget::renderFinalPass() {
     // Draw to the screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -167,6 +199,9 @@ void GLRenderWidget::renderFinalPass() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+/**
+ * @brief Updates the FPS/time and camera placement, and renders all renderers
+ */
 void GLRenderWidget::paintGL() {
     // Get the time in seconds
     m_numFrames++;
@@ -196,13 +231,13 @@ void GLRenderWidget::paintGL() {
 }
 
 /**
-  Draws a textured quad. The texture must be bound and unbound
-  before and after calling this method - this method assumes that the texture
-  has been bound beforehand using glBindTexture.
-
-  @param w: the width of the quad to draw
-  @param h: the height of the quad to draw
-**/
+ * Draws a textured quad. The texture must be bound and unbound
+ * before and after calling this method - this method assumes that the texture
+ * has been bound beforehand using glBindTexture.
+ *
+ * @param w The width of the quad to draw
+ * @param h The height of the quad to draw
+ **/
 void GLRenderWidget::renderTexturedQuad() {
     // Clamp value to edge of texture when texture index is out of bounds
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -210,12 +245,12 @@ void GLRenderWidget::renderTexturedQuad() {
     m_texquad.draw();
 }
 
-////////// UPDATERS //////////
-
 /**
-  Called when the screen gets resized.
-  The camera is updated when the screen resizes because the aspect ratio may change.
-**/
+ * @brief Resizes all buffers and viewport itself
+ * The camera is updated when the screen resizes because the aspect ratio may change.
+ * @param width The new width
+ * @param height The new height
+ */
 void GLRenderWidget::resizeGL(int width, int height) {
     // Set the viewport to fill the screen
     glViewport(0, 0, width, height);
@@ -228,10 +263,9 @@ void GLRenderWidget::resizeGL(int width, int height) {
 }
 
 /**
-  Update the camera's specifications.
-  It gets called in resizeGL which get called automatically on intialization
-  and whenever the window is resized.
-**/
+ * @brief Based on width and height, sets eye of camera to correct vector
+ * Also sets the projection of view of the scene based on the data
+ */
 void GLRenderWidget::updateCamera() {
     float w = width();
     float h = height();
@@ -241,45 +275,37 @@ void GLRenderWidget::updateCamera() {
     glm::vec3 dir(-fromAnglesN(cData.theta, cData.phi));
     glm::vec3 eye(cData.center - dir * cData.zoom);
 
-    m_transform.projection = glm::perspective(cData.fovy, ratio, 0.1f, 1000.f);
+    m_transform.projection = glm::perspective(cData.fovy, ratio, cData.near, cData.far);
     m_transform.view = glm::lookAt(eye, cData.center, cData.up);
 
     m_camera.setData(eye);
 }
 
 /**
-  Specifies to Qt what to do when the widget needs to be updated.
-  We only want to repaint the onscreen objects.
-**/
+ * @brief When ticking, simply update the onscreen objects
+ */
 void GLRenderWidget::tick() {
     update();
 }
 
-////////// USER INTERACTION //////////
-
 /**
-  Handles any key press from the keyboard
- **/
+ * @brief Based on keypress, does something special
+ * R will refresh, right arrow makes time faster, left makes time slower,
+ * and space pauses time. H should eventually hide/show text
+ * @param event The keypress event
+ */
 void GLRenderWidget::keyPressEvent(QKeyEvent *event) {
     switch(event->key()) {
-    case Qt::Key_S: {
-        QImage qi = grabFrameBuffer(false);
-        QString filter;
-        QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "", tr("PNG Image (*.png)"), &filter);
-        qi.save(QFileInfo(fileName).absoluteDir().absolutePath() + "/" + QFileInfo(fileName).baseName() + ".png", "PNG", 100);
-        break;
-    } case Qt::Key_R: {
+    case Qt::Key_R: {
         refresh();
-        break;
-    } case Qt::Key_H: {
         break;
     } case Qt::Key_Right: {
         m_timeMultiplier *= 1.1f;
-        if (m_timeMultiplier > 100.0f) m_timeMultiplier = 100.0f;
+        if (m_timeMultiplier > MAXMULT) m_timeMultiplier = MAXMULT;
         break;
     } case Qt::Key_Left: {
         m_timeMultiplier *= 0.9f;
-        if (m_timeMultiplier < 0.1f) m_timeMultiplier = 0.1f;
+        if (m_timeMultiplier < MINMULT) m_timeMultiplier = MINMULT;
         break;
     } case Qt::Key_Space: {
         if (!m_isOrbiting) {
@@ -292,63 +318,84 @@ void GLRenderWidget::keyPressEvent(QKeyEvent *event) {
 }
 
 /**
-  Called when the mouse is dragged.  Rotates the camera based on mouse movement.
-**/
+ * @brief Based on mouse movement, does something
+ * If a button was down, rotates the camera around the center of its scene.
+ * If not, just saves the mouse position for later.
+ * @param event The mouse event that triggered this
+ */
 void GLRenderWidget::mouseMoveEvent(QMouseEvent *event) {
     glm::vec2 pos(event->x(), event->y());
-    if (event->buttons() & Qt::LeftButton || event->buttons() & Qt::RightButton)
-    {
+    if (event->buttons() & Qt::LeftButton || event->buttons() & Qt::RightButton) {
         m_camera.rotateAroundCenter(pos - m_prevMousePos);
     }
     m_prevMousePos = pos;
 }
 
 /**
-  Record a mouse press position.
- **/
+ * @brief Register that a key was clicked by saving the previous positions
+ * @param event The mouse event that triggered this
+ */
 void GLRenderWidget::mousePressEvent(QMouseEvent *event) {
     m_prevMousePos.x = event->x();
     m_prevMousePos.y = event->y();
 }
 
 /**
-  Called when the mouse wheel is turned.  Zooms the camera in and out.
-**/
+ * @brief Called when the mouse wheel scrolls - zooms camera
+ * Zooms camera flat toward land when close enough
+ * @param event The wheel event that triggered this
+ */
 void GLRenderWidget::wheelEvent(QWheelEvent *event) {
     if (event->orientation() == Qt::Vertical) {
         m_camera.zoom(event->delta());
     }
 }
 
-////////// HELPERS //////////
-
 /**
-  Draws text for the FPS and screenshot prompt
- **/
+ * @brief Currently just prints the FPS to console
+ */
 void GLRenderWidget::printFPS() {
     // Prints FPS and that's it
     fprintf(stdout, "FPS: %d\n", (int)(m_currentFPS + .5f));
     return;
 }
 
-////////// GETTERS //////////
-
+/**
+ * @brief Returns the current camera
+ * @return m_camera
+ */
 Camera GLRenderWidget::getCamera() {
     return m_camera;
 }
 
+/**
+ * @brief Returns the current camera transformation
+ * @return m_transform
+ */
 Transforms GLRenderWidget::getTransformation() {
     return m_transform;
 }
 
+/**
+ * @brief Returns the speed multiplier for the simulation
+ * @return m_timeMultiplier
+ */
 float GLRenderWidget::getSimulationSpeed() {
     return m_timeMultiplier;
 }
 
+/**
+ * @brief Returns the rotational speed for simulation
+ * @return m_rotationalSpeed
+ */
 float GLRenderWidget::getRotationalSpeed() {
     return m_rotationalSpeed;
 }
 
+/**
+ * @brief Returns if the simulation is paused
+ * @return !m_isOrbiting
+ */
 bool GLRenderWidget::getPaused() {
     return !m_isOrbiting;
 }

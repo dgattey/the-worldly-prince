@@ -22,10 +22,16 @@ StarsRenderer::StarsRenderer(GLRenderWidget *renderer) {
     m_starData = new ParticleData[NUMPARTICLES];
 }
 
+/**
+ * @brief Simply deletes all particle data
+ */
 StarsRenderer::~StarsRenderer() {
     delete[] m_starData;
 }
 
+/**
+ * @brief Creates a particle and loads the star shaders, passing the right attribs in
+ */
 void StarsRenderer::createShaderProgram() {
     m_shader = ResourceLoader::loadShaders(":/shaders/star.vert",":/shaders/star.frag");
     GLuint pos = glGetAttribLocation(m_shader, "position");
@@ -35,10 +41,17 @@ void StarsRenderer::createShaderProgram() {
     m_particle.init(pos, texCoord);
 }
 
+/**
+ * @brief Creates a new FBO for this renderer
+ * @param size The FBO size
+ */
 void StarsRenderer::createFBO(glm::vec2 size) {
     GLRenderWidget::createFBO(&m_FBO, &m_colorAttachment, getTextureID(), size, false);
 }
 
+/**
+ * @brief Binds to the right stuff and enables blend/no depth and draws stars
+ */
 void StarsRenderer::render() {
     glUseProgram(m_shader);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
@@ -63,28 +76,46 @@ void StarsRenderer::render() {
     glUseProgram(0);
 }
 
+/**
+ * @brief Create entirely different stars for all of the particles
+ */
 void StarsRenderer::refresh() {
     for (int i = 0; i<NUMPARTICLES; i++) {
         setupStar(i);
     }
 }
 
-// GETTERS
-
+/**
+ * @brief Gets the texture ID associated with this renderer
+ * @return An int used to add to GL_TEXTURE0 to get a unique texture
+ */
 int StarsRenderer::getTextureID() {
     return 0;
 }
 
+/**
+ * @brief Returns the color attachment for this renderer
+ * @return A GLuint representing where to attach to to get colors
+ */
 GLuint *StarsRenderer::getColorAttach() {
     return &m_colorAttachment;
 }
 
+/**
+ * @brief Returns the FBO for this renderer
+ * @return A GLuint for the frame buffer object
+ */
 GLuint *StarsRenderer::getFBO() {
     return &m_FBO;
 }
 
-// START OF PRIVATE METHODS
-
+/**
+ * @brief Renders all stars with some optimizations
+ * Gets saved data, then loops through all particle data and checks for
+ * viewability. If outside viewport, culls the drawing of them. Passes
+ * the right shader variables, and draws the particle. If a shooting
+ * star, renders the tail too.
+ */
 void StarsRenderer::drawStars() {
     glm::vec3 eye = glm::normalize(m_renderer->getCamera().getData().eye);
     bool isPaused = m_renderer->getPaused();
@@ -109,6 +140,12 @@ void StarsRenderer::drawStars() {
     }
 }
 
+/**
+ * @brief Draws one celestial body given star index, angle, and axis
+ * @param i The index of the star
+ * @param angle The angle to rotate by to face user
+ * @param axis The axis of rotation to face user
+ */
 void StarsRenderer::drawBody(int i, float angle, glm::vec3 axis) {
     // Transformation computation
     Transforms trans = m_renderer->getTransformation();
@@ -131,6 +168,12 @@ void StarsRenderer::drawBody(int i, float angle, glm::vec3 axis) {
     m_particle.draw();
 }
 
+/**
+ * @brief Draws the tail of a shooting star
+ * @param i The index of the star to draw the tail for
+ * @param angle The angle to move in so the particle is facing the user
+ * @param axis The axis about which to rotate the particle
+ */
 void StarsRenderer::drawTail(int i, float angle, glm::vec3 axis) {
     glm::mat4x4 atmosphericRotation = getAtmosphericRotation();
     float alpha = m_starData[i].life / MAXLIFE;
@@ -159,6 +202,10 @@ void StarsRenderer::drawTail(int i, float angle, glm::vec3 axis) {
     }
 }
 
+/**
+ * @brief Calculates new position/life of star i
+ * @param i The index into the particle data
+ */
 void StarsRenderer::calculateData(int i) {
     float globalSpeed = m_renderer->getSimulationSpeed();
     m_starData[i].pos = m_starData[i].pos + globalSpeed*m_starData[i].dir;
@@ -175,6 +222,10 @@ void StarsRenderer::calculateData(int i) {
     }
 }
 
+/**
+ * @brief Creates a star from scratch
+ * @param The index into the particleData array
+ */
 void StarsRenderer::setupStar(int i) {
     float x,y,z;
     float radius = 0.0f;
@@ -201,11 +252,20 @@ void StarsRenderer::setupStar(int i) {
         m_starData[i].decay = 1;
 }
 
+/**
+ * @brief Returns the atmospheric rotation of the stars based on speed
+ * @return The glm::mat4x4 representing the rotation for the current rotational speed
+ */
 glm::mat4x4 StarsRenderer::getAtmosphericRotation() {
     return glm::rotate(m_renderer->getRotationalSpeed()/700.0f,
                        glm::vec3(0,1,-0.75f));
 }
 
+/**
+ * @brief Checks whether a given star is a shooting star
+ * @param i The index of the star
+ * @return If the direction is something other than static
+ */
 bool StarsRenderer::isShootingStar(int i) {
     return glm::length(m_starData[i].dir) > 0;
 }

@@ -1,135 +1,181 @@
 #include "Sphere.h"
-#include <iostream>
+#include "Util.h"
 
-Sphere::Sphere()
-{
-    m_isInitialized = false;
+#define MAX_P 100
+
+/**
+ * @brief Sets up sphere to use the given shader and params
+ * Creates the geometry too, by way of Shape methods.
+ * @param shader The GLuint for the shader
+ * @param param1 The resolution horizontally
+ * @param param2 The resolution vertically
+ */
+Sphere::Sphere(GLuint shader, int param1, int param2)
+    : Shape(shader, param1, param2) {
+    boundParams();
+    createGeometry();
 }
 
-Sphere::~Sphere()
-{
-    if (m_vertexBufferData != NULL) {
-        free(m_vertexBufferData);
+/**
+ * @brief Nothing to delete
+ */
+Sphere::~Sphere() {}
+
+/**
+ * @brief Computes a t-value for intersection given a point, dist, and data
+ * @param p The point to start from
+ * @param d The direction to move by t
+ * @param data An object encapsulting relevant information for casting
+ */
+void Sphere::computeT(glm::vec3 p, glm::vec3 d, RayData *data) {
+    float a = d.x*d.x + d.y*d.y + d.z*d.z;
+    float b = 2.0*(p.x*d.x + p.z*d.z + p.y*d.y);
+    float c = p.x*p.x + p.z*p.z + p.y*p.y - 0.25;
+
+    // Make sure in bounds
+    float disc = b*b - 4.0*a*c;
+    if (disc < 0) {
+        data->t = INT_MAX;
+        return;
+    }
+
+    // Compute the two possible t values
+    float sqrtd = sqrt(disc);
+    float t1 = (-b + sqrtd)/(2.0*a);
+    float t2 = (-b - sqrtd)/(2.0*a);
+
+    // Find the minimum one greater than 0
+    if (t1 > 0 && t1 < data->t) {
+        data->t = t1;
+        data->part = SPHERE_P;
+    }
+    if (t2 > 0 && t2 < data->t) {
+        data->t = t2;
+        data->part = SPHERE_P;
     }
 }
 
-Sphere *Sphere::generate(int p, GLuint position, GLuint normal) {
-    Sphere *s = new Sphere();
-    s->init(p, position, normal);
-    return s;
+/**
+ * @brief Given an eye, dir, and calculated data, gives back the normal
+ * Assumes computeT has already been called and the data object has a
+ * t value as well as a shape part for the intersection
+ * @param eye The eye point of the camera
+ * @param dir The direction to move in
+ * @param data An object encapsulating relevant information for computation
+ */
+void Sphere::computeNorm(glm::vec3 eye, glm::vec3 d, RayData *data) {
+    glm::vec3 transformEye = glm::vec3(data->transform*glm::vec4(eye, 1));
+    glm::vec3 transformDir = glm::vec3(data->transform*glm::vec4(d, 0));
+    glm::vec3 res = transformEye+data->t*transformDir;
+    data->norm = glm::vec4(res+res, 0);
 }
 
-void Sphere::init(int p, GLuint position, GLuint normal) {
-    init(p,p, position, normal);
+/**
+ * @brief Computes a texture for the sphere given rayData and a pointer to tex
+ * @param rayData An object with relevant information for texture finding
+ * @param texData The location to save the texture data
+ */
+void Sphere::computeTexture(RayData *rayData, TexturePointData *texData) {
+    glm::vec4 pt = rayData->intersectTransform;
+    texData->v = 1-(asin(pt.y/RADIUS)/M_PI+RADIUS);
+
+    // THE SINGULARITY!
+    if (texData->v == 0 || texData->v == 1) {
+        texData->u = RADIUS;
+        return;
+    }
+
+    // Figure out where u is
+    float theta = atan2(pt.z, pt.x);
+    if (theta < 0) texData->u = -theta/(2.0*M_PI);
+    else texData->u = 1 - (theta/(2.0*M_PI));
 }
 
-void Sphere::init(int p1, int p2, const GLuint vertexLocation, const GLuint normalLocation)
-{
+/**
+ * @brief Given new p1 and p2 values, update the geometry
+ * @param p1 A new horizontal resolution value
+ * @param p2 A new vertical resolution value
+ */
+void Sphere::updateGeometry(int p1, int p2) {
     m_p1 = p1;
     m_p2 = p2;
-    m_isInitialized = true;
-    // The current index into the buffer data array
-    int i = 0;
+    boundParams();
+    cleanupGL();
+    setupGL();
+    createGeometry();
+}
 
-    // delta theta per m_p2 slice
-    double theta_step = (2.0 * M_PI) / m_p2;
+/**
+ * @brief Bound the parameters to something sensible
+ */
+void Sphere::boundParams() {
+    m_p1 = m_p1 < 2 ? 2 : m_p1 > MAX_P ? MAX_P : m_p1; // Two rows at least
+    m_p2 = m_p2 < 3 ? 3 : m_p2 > MAX_P ? MAX_P : m_p2; // At least 3 sides to "sphere"
+}
 
-    // delta phi per m_p1 slice
-    double phi_step = (M_PI) / m_p1;
+/**
+ * @brief Actually create the triangular geometry and pass all data to GL
+ */
+void Sphere::createGeometry() {
+    float x1,x2,x3,x4,y1,y2,z1,z2,z3,z4,cosTheta1,cosTheta2,sinTheta1,sinTheta2,sinPhi1,sinPhi2;
+    int arrayPos = 0;
+    const float r = 0.5;
 
-    // The size of the vertex buffer data array
-    int size = 2 * (m_p1) * m_p2 * 6 * 3;
-    m_vertexBufferData = (GLfloat *)malloc(sizeof(GLfloat) * size);
+    // Numbers of triangles
+    m_numTriangles = NUM_VERTS*(m_p2*2*(m_p1)); // Count of all verts
+    m_vertexData = new GLfloat[6*m_numTriangles];
 
-    for (int slice = 0; slice < m_p2; slice++) {
+    // Theta, or p2 (horizontal)
+    float phi = (2*M_PI)/(1.0*(2*m_p1));
+    float theta = (2*M_PI)/(1.0*m_p2);
+    for (int i=0; i<m_p2; i++) {
+        cosTheta1 = cos(-i*theta);
+        cosTheta2 = cos(-(i-1)*theta);
+        sinTheta1 = sin(-i*theta);
+        sinTheta2 = sin(-(i-1)*theta);
 
-        for (int row = 0; row < m_p1; row++) {
-            // Lower left
-            glm::vec3 point1 = cartesianFromDegs(theta_step * slice, phi_step * row, 0.5);
+        // Phi, or p1 (vertical)
+        for (int j=1; j<=m_p1; j++) {
+            sinPhi1 = sin(-j*phi);
+            sinPhi2 = sin(-(j-1)*phi);
+            y1 = r*cos(-j*phi);
+            y2 = r*cos(-(j-1)*phi);
+            x1 = r*sinPhi1*cosTheta1;
+            x2 = r*sinPhi1*cosTheta2;
+            x3 = r*sinPhi2*cosTheta1;
+            x4 = r*sinPhi2*cosTheta2;
+            z1 = r*sinPhi1*sinTheta1;
+            z2 = r*sinPhi1*sinTheta2;
+            z3 = r*sinPhi2*sinTheta1;
+            z4 = r*sinPhi2*sinTheta2;
 
-            // Upper right
-            glm::vec3 point2 = cartesianFromDegs(theta_step * (slice + 1), phi_step * (row + 1), 0.5);
+            // Vectors to use below
+            glm::vec3 v1 = glm::vec3(x1, y1, z1);
+            glm::vec3 v2 = glm::vec3(x2, y1, z2);
+            glm::vec3 v3 = glm::vec3(x3, y2, z3);
+            glm::vec3 v4 = glm::vec3(x4, y2, z4);
 
-            // Upper left
-            glm::vec3 point3 = cartesianFromDegs(theta_step * slice, phi_step * (row + 1), 0.5);
+            // First tri
+            storeVectors(v1, glm::normalize(v1), &arrayPos);
+            storeVectors(v3, glm::normalize(v3), &arrayPos);
+            storeVectors(v2, glm::normalize(v2), &arrayPos);
 
-            // Lower right
-            glm::vec3 point5 = cartesianFromDegs(theta_step * (slice + 1), phi_step * row, 0.5);
-
-            // point4 = point1, point6 = point2
-            addVertexNormal(point1, glm::normalize(point1), &i);
-            addVertexNormal(point2, glm::normalize(point2), &i);
-            addVertexNormal(point3, glm::normalize(point3), &i);
-            addVertexNormal(point1, glm::normalize(point1), &i);
-            addVertexNormal(point5, glm::normalize(point5), &i);
-            addVertexNormal(point2, glm::normalize(point2), &i);
+            // Second tri
+            storeVectors(v2, glm::normalize(v2), &arrayPos);
+            storeVectors(v3, glm::normalize(v3), &arrayPos);
+            storeVectors(v4, glm::normalize(v4), &arrayPos);
         }
     }
 
-    // Step 2: initialize and bind a Vertex Array Object -- see glGenVertexArrays and glBindVertexArray
-    glGenVertexArrays(1, &m_vaoID);	//	Create	1	VAO
+    // Pass all vertices to GL and setup attrs and normals
+    passVerticesToGL(sizeof(GLfloat)*6*m_numTriangles);
+}
+
+/**
+ * @brief Simply binds and draws the triangles
+ */
+void Sphere::renderGeometry() {
     glBindVertexArray(m_vaoID);
-
-    // Step 3: initialize and bind a buffer for your vertex data -- see glGenBuffers and glBindBuffer
-    GLuint vboID;
-    glGenBuffers(1, &vboID);
-    glBindBuffer(GL_ARRAY_BUFFER, vboID);
-
-    // Step 4: Send your vertex data to the GPU -- see glBufferData
-    glBufferData(GL_ARRAY_BUFFER, size * sizeof(GLfloat), m_vertexBufferData, GL_STATIC_DRAW);
-
-    // Step 5: Expose the vertices to other OpenGL components (namely, shaders)
-    //         -- see glEnableVertexAttribArray and glVertexAttribPointer
-    glEnableVertexAttribArray(vertexLocation);
-    glEnableVertexAttribArray(normalLocation);
-    glVertexAttribPointer(
-        vertexLocation,
-        3,                   // Num coordinates per position
-        GL_FLOAT,            // Type
-        GL_FALSE,            // Normalized
-        sizeof(GLfloat) * 6, // Stride
-        (void*) 0            // Array buffer offset
-    );
-    glVertexAttribPointer(
-        normalLocation,
-        3,           // Num coordinates per normal
-        GL_FLOAT,    // Type
-        GL_TRUE,     // Normalized
-        sizeof(GLfloat) * 6,           // Stride
-        (void*) (sizeof(GLfloat) * 3)    // Array buffer offset
-   );
-    // Step 6: Clean up -- unbind the buffer and vertex array.
-    //         It is a good habit to leave the state of OpenGL the way you found it
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDrawArrays(GL_TRIANGLES, 0, m_numTriangles);
     glBindVertexArray(0);
 }
-
-glm::vec3 Sphere::cartesianFromDegs(double theta, double phi, double radius)
-{
-    double x = radius * sin(phi) * cos(theta);
-    double y = radius * cos(phi);
-    double z = radius * sin(phi) * sin(theta);
-    return glm::vec3(x, y, z);
-}
-
-void Sphere::render()
-{
-    if (m_isInitialized) {
-        glBindVertexArray(m_vaoID);
-        int size = 2 * (m_p1 - 2) * m_p2 * 6 * 3;
-        glDrawArrays(GL_TRIANGLES, 0, size);
-        glBindVertexArray(0);
-    }
-}
-
-void Sphere::addVertexNormal(glm::vec3 vertex, glm::vec3 normal, int *startIndex)
-{
-    m_vertexBufferData[(*startIndex)++] = vertex.x;  //X
-    m_vertexBufferData[(*startIndex)++] = vertex.y;  //Y
-    m_vertexBufferData[(*startIndex)++] = vertex.z;  //Z
-
-    m_vertexBufferData[(*startIndex)++] = normal.x;  //X Normal
-    m_vertexBufferData[(*startIndex)++] = normal.y;  //Y Normal
-    m_vertexBufferData[(*startIndex)++] = normal.z;  //Z Normal
-}
-

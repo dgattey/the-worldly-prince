@@ -13,6 +13,10 @@
 #define MARS 2
 #define SUN 3
 
+/**
+ * @brief Creates the planet data for rendering later
+ * @param renderer The GLRenderWidget owning this renderer
+ */
 PlanetsRenderer::PlanetsRenderer(GLRenderWidget *renderer) {
     m_renderer = renderer;
     PlanetColor c;
@@ -42,26 +46,39 @@ PlanetsRenderer::PlanetsRenderer(GLRenderWidget *renderer) {
     m_planetData += PlanetData(20.f, glm::vec3(3,0,1), 40.f, 140.f, glm::vec3(-80, 0, 100), c);
 }
 
+/**
+ * @brief Deletes all planet shape data
+ */
 PlanetsRenderer::~PlanetsRenderer() {
     for (int i=0; i<m_planets.size(); i++) {
         delete m_planets.at(i);
     }
 }
 
+/**
+ * @brief Loads the noise vertex and fragment shaders and creates two planet shapes
+ * The first has low vertices, and the second has high vertices, making them suited
+ * to different tasks as a result
+ */
 void PlanetsRenderer::createShaderProgram() {
     m_shader = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
-    GLuint pos = glGetAttribLocation(m_shader, "position");
-    GLuint norm = glGetAttribLocation(m_shader, "normal");
 
     // Order is moon, earth/mars/sun
-    m_planets += Sphere::generate(VERTS_LOW,pos,norm);
-    m_planets += Sphere::generate(VERTS_HIGH,pos,norm);
+    m_planets += new Sphere(m_shader, VERTS_LOW, VERTS_LOW);
+    m_planets += new Sphere(m_shader, VERTS_HIGH, VERTS_HIGH);
 }
 
+/**
+ * @brief Calls on GLRenderWidget to create an FBO
+ * @param size the size of the FBO
+ */
 void PlanetsRenderer::createFBO(glm::vec2 size) {
     GLRenderWidget::createFBO(&m_FBO, &m_colorAttachment, getTextureID(), size, true);
 }
 
+/**
+ * @brief Binds to the appropriate variables and renders the scene
+ */
 void PlanetsRenderer::render() {
     glUseProgram(m_shader);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
@@ -79,30 +96,51 @@ void PlanetsRenderer::render() {
     glUseProgram(0);
 }
 
+/**
+ * @brief Changes seed that the shader uses
+ */
 void PlanetsRenderer::refresh() {
     randomizeSeed();
 }
 
-// GETTERS
-
+/**
+ * @brief Returns a unique texture ID to associate with the planets
+ * @return an int to add to GL_TEXTURE0 to get a unique texture
+ */
 int PlanetsRenderer::getTextureID() {
     return 1;
 }
 
+/**
+ * @brief Returns the current color attachment
+ * @return a GLuint used to attach colors to
+ */
 GLuint *PlanetsRenderer::getColorAttach() {
     return &m_colorAttachment;
 }
 
+/**
+ * @brief Returns the FBO associated with this renderer
+ * @return a GLuint used as the setup FBO for this renderer
+ */
 GLuint *PlanetsRenderer::getFBO() {
     return &m_FBO;
 }
 
+/**
+ * @brief Gets transformation of the moon
+ * @param speed The speed of the simulation
+ * @return The transformation of the moon as a glm::mat4x4 at speed
+ */
 glm::mat4x4 PlanetsRenderer::getMoonTransformation(float speed) {
     return applyPlanetTrans(speed, m_planetData.at(MOON));
 }
 
-// START OF PRIVATE METHODS
-
+/**
+ * @brief Actually draws the planets
+ * Passes the correct info to the shaders for everything in planetData.
+ * Also calls render() on the shapes themselves
+ */
 void PlanetsRenderer::drawPlanets() {
     Transforms trans = m_renderer->getTransformation();
     float speed = m_renderer->getRotationalSpeed();
@@ -123,10 +161,19 @@ void PlanetsRenderer::drawPlanets() {
         glUniform4fv(colorHigh, 1, &c.high[0]);
         glUniform1f(threshold, c.threshold);
         glUniformMatrix4fv(mvp, 1, GL_FALSE, &trans.getTransform()[0][0]);
-        m_planets.at(c.shapeIndex)->render();
+        m_planets.at(c.shapeIndex)->renderGeometry();
     }
 }
 
+/**
+ * @brief Based on a data object and speed, returns transformation for planet
+ * Scales to make bigger/smaller, then rotates around a local axis (day rotation)
+ * then translates to starting position and rotates again to represent the year
+ * rotation. All data except for year rotational axis comes from the PlanetData
+ * @param speed The current simulation speed
+ * @param trans The saved data to apply to the planet
+ * @return A glm::mat4x4 representing transformations for this planetData at the given speed
+ */
 glm::mat4x4 PlanetsRenderer::applyPlanetTrans(float speed, PlanetData trans) {
     return glm::rotate(speed/trans.year, glm::vec3(0,1,0)) *
            glm::translate(trans.place) *
@@ -135,6 +182,9 @@ glm::mat4x4 PlanetsRenderer::applyPlanetTrans(float speed, PlanetData trans) {
            m_renderer->getTransformation().model;
 }
 
+/**
+ * @brief Makes the seed a new random number in [0,1]
+ */
 void PlanetsRenderer::randomizeSeed() {
     m_seed = frandN();
 }

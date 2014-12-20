@@ -3,6 +3,9 @@
 
 #include "GLCommon.h"
 
+/**
+ * @brief Struct to hold information about a particle
+ */
 struct __attribute__ ((aligned (16))) ParticleData {
     float life;
     float decay;
@@ -12,10 +15,12 @@ struct __attribute__ ((aligned (16))) ParticleData {
     glm::vec3 force;
 };
 
+/**
+ * @brief Supports initialization and rendering of particles
+ */
 class Particle {
 public:
     Particle();
-    Particle(const GLuint vertexLocation, const GLuint normalLocation);
 
     void init(const GLuint vertexLocation, const GLuint normalLocation);
     void draw();

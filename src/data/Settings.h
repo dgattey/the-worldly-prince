@@ -4,17 +4,16 @@
 #include <QObject>
 
 /**
-
-    @struct Settings
-    @brief  Stores application settings for the CS123 GUI.
-
-        You can access all app settings through the "settings" global variable.
-    The settings will be automatically updated when things are changed in the
-    GUI (the reverse is not true however: changing the value of a setting does
-    not update the GUI).
-*/
-struct Settings
-{
+ *
+ * @struct Settings
+ * @brief  Stores application settings for the GUI
+ *
+ * Access to all app settings is through the "settings" global variable.
+ * The settings will be automatically updated when things are changed in the
+ * GUI (the reverse is not true however: changing the value of a setting does
+ * not update the GUI).
+ */
+struct Settings {
     // Loads settings from disk, or fills in default values if no saved settings exist.
     void loadSettingsOrDefaults();
 

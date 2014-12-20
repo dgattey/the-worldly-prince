@@ -2,44 +2,39 @@
 #include <iostream>
 
 #define NUM_TRIS 2
+#define SIZE 1.0f
 
+/**
+ * @brief Sets up particle as uninitialized
+ */
 Particle::Particle() {
     m_isInitialized = false;
 }
 
-Particle::Particle(const GLuint vertexLocation, const GLuint textureLocation){
-    init(vertexLocation, textureLocation);
-}
-
+/**
+ * @brief Initializes particle object - assumes shader already setup
+ * @param vertexLocation The vertex GLuint
+ * @param textureLocation The texture GLuint
+ */
 void Particle::init(const GLuint vertexLocation, const GLuint textureLocation){
     m_isInitialized = true;
 
-    float v = 1.0f;
+    // All corners
     GLfloat vertexBufferData[] = {
-        -v, v, 0,
-         0, 0,
-         v, -v, 0,
-         1, 1,
-         v, v, 0,
-         1, 0,
-        -v, v, 0,
-         0, 0,
-        -v, -v, 0,
-         0, 1,
-         v, -v, 0,
-         1, 1
+        -SIZE, SIZE, 0, 0, 0,
+         SIZE, -SIZE, 0, 1, 1,
+         SIZE, SIZE, 0, 1, 0,
+        -SIZE, SIZE, 0, 0, 0,
+        -SIZE, -SIZE, 0, 0, 1,
+         SIZE, -SIZE, 0, 1, 1
     };
 
-    // VAO init
+    // VAO and vertex buffer init
     glGenVertexArrays(1, &m_vaoID);
     glBindVertexArray(m_vaoID);
-
-    // Vertex buffer init
     GLuint vertexBuffer;
     glGenBuffers(1, &vertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*30, vertexBufferData, GL_STATIC_DRAW);
 
     // Expose vertices to shader
@@ -68,6 +63,10 @@ void Particle::init(const GLuint vertexLocation, const GLuint textureLocation){
     glBindVertexArray(0);
 }
 
+/**
+ * @brief Draws a particle by binding to the VAO and drawing 2 triangles
+ * Fails if init hasn't been called
+ */
 void Particle::draw(){
     if (!m_isInitialized){
         std::cout << "You must call init() before you can draw!" << std::endl;

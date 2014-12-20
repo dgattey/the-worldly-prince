@@ -1,37 +1,28 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
-#include "GLCommon.h"
 #include "Shape.h"
 
-class Sphere : public Shape
-{
+/**
+ * @brief Sphere - A Shape
+ * A class that creates a sphere by tesselating triangles
+ * over the parameters passed into the constructor
+ */
+class Sphere : public Shape {
 public:
-    // uninitialized sphere
-    Sphere();
+    Sphere(GLuint shader, int param1, int param2);
+    virtual ~Sphere();
 
-    ~Sphere();
+    // Required geometry functions
+    void createGeometry();
+    void renderGeometry();
+    void updateGeometry(int p1, int p2);
 
-    // Creates initialized sphere and returns it
-    static Sphere *generate(int p, GLuint position, GLuint normal);
+    void boundParams();
 
-    void init(int p1, int p2, GLuint position, GLuint normal);
-    void init(int p, GLuint position, GLuint normal);
-
-    void render();
-
-    bool needsUpdate();
-
-private:
-
-    GLfloat *m_vertexBufferData;
-    GLuint m_vaoID;
-    int m_p1;
-    int m_p2;
-    bool m_isInitialized;
-    void addVertexNormal(glm::vec3 vertex, glm::vec3 normal, int *startIndex);
-    glm::vec3 cartesianFromDegs(double theta, double phi, double radians);
-
+    void computeT(glm::vec3 p, glm::vec3 d, RayData *data);
+    void computeNorm(glm::vec3 eye, glm::vec3 d, RayData *data);
+    void computeTexture(RayData *rayData, TexturePointData *texData);
 };
 
 #endif // SPHERE_H

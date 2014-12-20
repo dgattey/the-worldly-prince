@@ -15,14 +15,16 @@ SOURCES += \
     src/render/StarsRenderer.cpp \
     src/scene/Camera.cpp \
     src/scene/Particle.cpp \
-    src/scene/TextureQuad.cpp \
     src/scene/Transforms.cpp \
     src/shapes/Cylinder.cpp \
     src/shapes/Flower.cpp \
     src/shapes/Shape.cpp \
     src/shapes/Sphere.cpp \
     src/main.cpp \
-    src/render/GLRenderWidget.cpp
+    src/render/GLRenderWidget.cpp \
+    src/scene/TexturedQuad.cpp \
+    src/shapes/Cone.cpp \
+    src/shapes/Cube.cpp
 
 HEADERS += \
     src/data/Bindings.h \
@@ -43,7 +45,10 @@ HEADERS += \
     src/shapes/Flower.h \
     src/shapes/Shape.h \
     src/shapes/Sphere.h \
-    src/render/GLRenderWidget.h
+    src/render/GLRenderWidget.h \
+    src/shapes/Cone.h \
+    src/shapes/Cube.h \
+    src/shapes/ShapeData.h
 
 FORMS += \
     src/data/Window.ui

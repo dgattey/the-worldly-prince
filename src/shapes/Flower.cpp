@@ -8,15 +8,12 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/ext.hpp>
 #include <iostream>
-/* 
- * Sets up the properties of a flower
- * Note that this does not actually initialize the subshapes since it wasn't
- * working when I tried that for some reason.
- *
+
+/**
+ * @brief Sets up the properties of a flower
  * This flower is randomized and not dependent on any other flower.
  */
-Flower::Flower()
-{
+Flower::Flower() {
 
     // get some randomized rotation from the initial point
     glm::vec3 dims = glm::vec3(rand() % 2, rand() % 2, rand() % 2);
@@ -59,16 +56,13 @@ Flower::Flower()
     }
 }
 
-/* 
- * Sets up the properties of a flower based on another flower
- * Note that this also does not actually initialize the subshapes since 
- * it wasn't working when I tried that for some reason.
- *
+/**
+ * @brief Sets up the properties of a flower
  * This flower copies its properties from the parameter and has a rotation
  * near to the passed in flower. This is the way that clumping is done.
+ * @param around The flower it should cluster around
  */
-Flower::Flower(Flower *around)
-{
+Flower::Flower(Flower *around) {
     petalCount = around->petalCount;
     float angle = pow(rand() % ((int)pow(360.f, (1.f/2.f))), 2.f);
     glm::vec3 dims = glm::vec3((float)rand() / ((float)RAND_MAX),
@@ -85,11 +79,18 @@ Flower::Flower(Flower *around)
     }
 }
 
-Flower::~Flower()
-{
+/**
+ * @brief Just delete the petal models
+ */
+Flower::~Flower() {
     delete[] petalModels;
 }
 
+/**
+ * @brief Culling based on eye
+ * @param cameraEye The camera's eye
+ * @return If the flower is currently visible or not
+ */
 bool Flower::isVisible(glm::vec3 cameraEye) {
     glm::vec4 flowerPos = cylModel * glm::vec4(0.f, 0.f, 0.f, 1.f);
     float dot = glm::dot(glm::normalize(cameraEye), glm::normalize(glm::vec3(flowerPos)));

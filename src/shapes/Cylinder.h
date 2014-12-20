@@ -1,33 +1,36 @@
 #ifndef CYLINDER_H
 #define CYLINDER_H
 
-#include "GLCommon.h"
-#include "Shape.h"
+#include "Cone.h"
 
-class Cylinder : public Shape
-{
+/**
+ * @brief Cylinder - A Shape
+ * A class that creates a cylinder by tesselating triangles
+ * over the parameter passed into the constructor.
+ * Inherits from the cone since it does very similar things
+ */
+class Cylinder : public Cone {
 public:
-    // uninitialized cylinder
-    Cylinder();
+    Cylinder(GLuint shader, int param1, int param2);
+    virtual ~Cylinder();
 
-    ~Cylinder();
+    // Required geometry functions
+    void createGeometry();
+    void renderGeometry();
+    void updateGeometry(int p1, int p2);
 
-    void init(const GLuint position, const GLuint normal);
+    void boundParams();
 
-    void render();
+    void computeT(glm::vec3 p, glm::vec3 d, RayData *data);
+    void computeNorm(glm::vec3 eye, glm::vec3 dir, RayData *data);
+    void computeTexture(RayData *data, TexturePointData *texData);
 
-    bool needsUpdate();
+    // Computes all ray circle intersections for the cylinder itself
+    static void rayCircleIntersect(glm::vec3 p, glm::vec3 d, RayData *data);
 
-private:
+    // Helper to create sides
+    void createSideGeometry(int *arrayPos, const float st, const float theta);
 
-    GLfloat *m_vertexBufferData;
-    GLuint m_vaoID;
-    bool m_isInitialized;
-    int m_p1;
-    int m_p2;
-
-    void addVertexNormal(glm::vec3 vertex, glm::vec3 normal, int
-            *startIndex);
 };
 
 #endif // CYLINDER_H

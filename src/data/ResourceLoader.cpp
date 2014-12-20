@@ -6,10 +6,18 @@
 #include <math.h>
 #include <fstream>
 
-ResourceLoader::ResourceLoader() {
+ResourceLoader::ResourceLoader() {}
 
-}
-
+/**
+ * @brief Given two file paths for a vert and frag shader, loads them in
+ * Will load each shader separately, then create a program for both, attach
+ * them, check them, and link them together. If all works well, will return
+ * a GLuint for the program. If not, will print an error to stderr with an
+ * appropriate message.
+ * @param vertFile The vertex shader file
+ * @param fragFile The fragment shader file
+ * @return A GLuint representing the program
+ */
 GLuint ResourceLoader::loadShaders(const char *vertFile, const char * fragFile){
     GLint result = GL_FALSE;
     int infoSize;
@@ -44,6 +52,16 @@ GLuint ResourceLoader::loadShaders(const char *vertFile, const char * fragFile){
     return programId;
 }
 
+/**
+ * @brief Loads a shader in and returns a GLuint for it
+ * Based on a filepath and a string representing type of shader,
+ * loads the shader and returns a GLuint for it if it worked.
+ * If not, outputs an error to stderr and returns a meaningless
+ * GLuint.
+ * @param path the file path
+ * @param shaderType one of "vertex", "fragment", or "geometry"
+ * @return a GLuint for the shader itself
+ */
 GLuint ResourceLoader::loadShader(const char *path, int shaderType) {
     GLint result = GL_FALSE;
     int infoSize;

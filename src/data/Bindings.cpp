@@ -2,12 +2,13 @@
 #include <math.h>
 #include <QVariant>
 
-
-////////////////////////////////////////////////////////////////////////////////
-// class BoolBinding
-////////////////////////////////////////////////////////////////////////////////
-BoolBinding* BoolBinding::bindCheckbox(QCheckBox *checkbox, bool &value)
-{
+/**
+ * @brief Binds a checkbox to a value
+ * @param checkbox The box in the UI
+ * @param value The value pointer (to a bool)
+ * @return A binding between the two
+ */
+BoolBinding* BoolBinding::bindCheckbox(QCheckBox *checkbox, bool &value) {
     // Bind the checkbox and the value together
     BoolBinding *binding = new BoolBinding(value);
     connect(checkbox, SIGNAL(toggled(bool)), binding, SLOT(boolChanged(bool)));
@@ -18,8 +19,13 @@ BoolBinding* BoolBinding::bindCheckbox(QCheckBox *checkbox, bool &value)
     return binding;
 }
 
-BoolBinding* BoolBinding::bindDock(QDockWidget *dock, bool &value)
-{
+/**
+ * @brief Binds a dock widget to a value
+ * @param dock The dock in the UI
+ * @param value The value pointer (to a bool)
+ * @return A binding between the two
+ */
+BoolBinding* BoolBinding::bindDock(QDockWidget *dock, bool &value) {
     // Bind the checkbox and the value together
     BoolBinding *binding = new BoolBinding(value);
     connect(dock, SIGNAL(visibilityChanged(bool)), binding, SLOT(boolChanged(bool)));
@@ -30,18 +36,22 @@ BoolBinding* BoolBinding::bindDock(QDockWidget *dock, bool &value)
     return binding;
 }
 
-void BoolBinding::boolChanged(bool newValue)
-{
+/**
+ * @brief Method to be called when a boolean changed
+ * @param newValue the new boolean
+ */
+void BoolBinding::boolChanged(bool newValue) {
     m_value = newValue;
     emit dataChanged();
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// class ChoiceBinding
-////////////////////////////////////////////////////////////////////////////////
-ChoiceBinding* ChoiceBinding::bindRadioButtons(int numRadioButtons, int value, ...)
-{
+/**
+ * @brief Binds radio buttons to values
+ * @param numRadioButtons The dock in the UI
+ * @param value The value pointers (to an int)
+ * @return A binding between the two
+ */
+ChoiceBinding* ChoiceBinding::bindRadioButtons(int numRadioButtons, int value, ...) {
     // Create a button group from the variable argument list following initialValue
     QButtonGroup *buttonGroup = new QButtonGroup;
     va_list args;
@@ -61,8 +71,13 @@ ChoiceBinding* ChoiceBinding::bindRadioButtons(int numRadioButtons, int value, .
     return binding;
 }
 
-ChoiceBinding* ChoiceBinding::bindTabs(QTabWidget *tabs, int &value)
-{
+/**
+ * @brief Binds tabs to values
+ * @param tabs The tabs themselves
+ * @param value The value pointer (to int)
+ * @return A binding between the two
+ */
+ChoiceBinding* ChoiceBinding::bindTabs(QTabWidget *tabs, int &value) {
     // Bind the tabs and the value together
     ChoiceBinding *binding = new ChoiceBinding(value);
     connect(tabs, SIGNAL(currentChanged(int)), binding, SLOT(intChanged(int)));
@@ -74,8 +89,11 @@ ChoiceBinding* ChoiceBinding::bindTabs(QTabWidget *tabs, int &value)
     return binding;
 }
 
-void ChoiceBinding::intChanged(int newValue)
-{
+/**
+ * @brief Method to be called when an int changed
+ * @param newValue the new int
+ */
+void ChoiceBinding::intChanged(int newValue) {
     m_value = newValue;
     emit dataChanged();
 }

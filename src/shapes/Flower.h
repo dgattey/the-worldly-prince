@@ -5,11 +5,12 @@
 #include "Cylinder.h"
 #include "Sphere.h"
 
-class Flower
-{
+#define STEMCOLOR glm::vec3(0, 0.5, 0)
+
+class Flower {
 public:
     Flower();
-    
+
     // copy constructor-ish
     Flower(Flower *around);
     virtual ~Flower();

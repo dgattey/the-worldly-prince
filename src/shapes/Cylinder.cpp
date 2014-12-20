@@ -1,224 +1,195 @@
 #include "Cylinder.h"
-#include <iostream>
+#include "Shape.h"
+#include "Util.h"
 
-Cylinder::Cylinder()
-{
-    m_p1 = 10;
-    m_p2 = 10;
-    m_isInitialized = false;
+#define FACES 6
+#define NUM_VERTS 3
+
+/**
+ * @brief Constructor for a cylinder - bounds the params and creates geometry
+ * @param shader The shader for this shape
+ * @param param1 The horizontal tesselation
+ * @param param2 The vertical tesselation
+ */
+Cylinder::Cylinder(GLuint shader, int param1, int param2) {
+    Shape::initShape(shader, param1, param2);
+    boundParams();
+    createGeometry();
 }
 
-Cylinder::~Cylinder()
-{
-    m_p1 = 10;
-    m_p2 = 10;
-    free(m_vertexBufferData);
+/**
+ * @brief Empty deconstructor
+ */
+Cylinder::~Cylinder() {}
+
+/**
+ * @brief Intersects a ray with the sides of the circle that is the infinite cylinder
+ * @param p The point to start from
+ * @param d The direction to move by t
+ * @param data An object encapsulating relevant information for casting
+ */
+void Cylinder::rayCircleIntersect(glm::vec3 p, glm::vec3 d, RayData *data) {
+    float a = d.x*d.x + d.z*d.z;
+    float b = 2.0*p.x*d.x + 2.0*p.z*d.z;
+    float c = p.x*p.x + p.z*p.z - RADIUS_SQ;
+
+    // Make sure in bounds
+    Shape::rayCircleBoundsCheckT(p, d, a, b, c, RADIUS, CYLINDER_SIDE, data);
 }
 
-void Cylinder::init(const GLuint vertexLocation, const GLuint normalLocation)
-{
-    m_isInitialized = true;
-    // The current index into the buffer data array
-    int i = 0;
+/**
+ * @brief Computes a t-value for intersection given a point, dist, and data
+ * @param p The point to start from
+ * @param d The direction to move by t
+ * @param data An object encapsulting relevant information for casting
+ */
+void Cylinder::computeT(glm::vec3 p, glm::vec3 d, RayData *data) {
+    Cylinder::rayCircleIntersect(p, d, data); // Infinite cylinder
+    Shape::rayCapIntersectT(p, d, RADIUS, CYLINDER_TOP_CAP, data); // Top cap
+    Shape::rayCapIntersectT(p, d, -RADIUS, CYLINDER_BOTTOM_CAP, data); // Bottom cap
+}
 
-    // The amount each slice rotates by
-    double step = (2.0 * M_PI) / m_p2;
-
-    // The size of the vertex buffer data array
-    int size = 6 * 3 * m_p2 * (6 * m_p1 - 2);
-    m_vertexBufferData = (GLfloat *)malloc(sizeof(GLfloat) * size);
-
-    // For each of the m_p2 slices
-    for (int slice = 0; slice < m_p2; slice++) {
-        float oldX = 0.5 * cos((slice - 1) * step);
-        float oldZ = 0.5 * sin((slice - 1) * step);
-        float newX = 0.5 * cos(slice * step);
-        float newZ = 0.5 * sin(slice * step);
-
-        // First we do the side
-        // We can use the same len since they're both a radius away from the center.
-        glm::vec3 oldNormal = glm::vec3(oldX, 0, oldZ);
-        glm::vec3 newNormal = glm::vec3(newX, 0, newZ);
-        for (int row = 0; row < m_p1; row++) {
-            // Lower left
-            glm::vec3 point1 = glm::vec3(
-                    newX,
-                    -0.5 + row * (1.f / m_p1),
-                    newZ);
-
-            // Upper right
-            glm::vec3 point2 = glm::vec3(
-                    oldX,
-                    -0.5 + (row + 1) * (1.f / m_p1),
-                    oldZ);
-
-            // Upper left
-            glm::vec3 point3 = glm::vec3(
-                    newX,
-                    -0.5 + (row + 1) * (1.f / m_p1),
-                    newZ);
-
-            // Lower right
-            glm::vec3 point5 = glm::vec3(
-                    oldX,
-                    -0.5 + row * (1.f / m_p1),
-                    oldZ);
-
-            addVertexNormal(point1, newNormal, &i);
-            addVertexNormal(point2, oldNormal, &i);
-            addVertexNormal(point3, newNormal, &i);
-            addVertexNormal(point1, newNormal, &i);
-            addVertexNormal(point5, oldNormal, &i);
-            addVertexNormal(point2, oldNormal, &i);
-        }
-
-        // Now we'll do the top
-        glm::vec3 normal = glm::vec3(0, 1, 0);
-        for (int row = 0; row < m_p1; row++) {
-            // Lower left
-            glm::vec3 point1 = glm::vec3(
-                    newX * (1 - (float)row / m_p1),
-                    0.5,
-                    newZ * (1 - (float)row / m_p1));
-
-            // Upper right
-            glm::vec3 point2 = glm::vec3(
-                    oldX * (1 - (float)(row + 1) / m_p1),
-                    0.5,
-                    oldZ * (1 - (float)(row + 1) / m_p1));
-
-            // Upper left
-            glm::vec3 point3 = glm::vec3(
-                    newX * (1 - (float)(row + 1) / m_p1),
-                    0.5,
-                    newZ * (1 - (float)(row + 1) / m_p1));
-
-            // Lower right
-            glm::vec3 point5 = glm::vec3(
-                    oldX * (1 - (float)row / m_p1),
-                    0.5,
-                    oldZ * (1 - (float)row / m_p1));
-
-            // And now the tip (special case the inner triangle)
-            if (row == (m_p1 - 1)) {
-                addVertexNormal(point1, normal, &i);
-                addVertexNormal(point5, normal, &i);
-                addVertexNormal(point2, normal, &i);
-                break;
-            }
-
-            // point4 = point1, point6 = point2
-            addVertexNormal(point1, normal, &i);
-            addVertexNormal(point2, normal, &i);
-            addVertexNormal(point3, normal, &i);
-            addVertexNormal(point1, normal, &i);
-            addVertexNormal(point5, normal, &i);
-            addVertexNormal(point2, normal, &i);
-        }
-
-        // Now we'll do the bottom
-        normal = glm::vec3(0, -1, 0);
-        for (int row = 0; row < m_p1; row++) {
-            // Lower left
-            glm::vec3 point1 = glm::vec3(
-                    oldX * (1 - (float)row / m_p1),
-                    -0.5,
-                    oldZ * (1 - (float)row / m_p1));
-
-            // Upper right
-            glm::vec3 point2 = glm::vec3(
-                    newX * (1 - (float)(row + 1) / m_p1),
-                    -0.5,
-                    newZ * (1 - (float)(row + 1) / m_p1));
-
-            // Upper left
-            glm::vec3 point3 = glm::vec3(
-                    oldX * (1 - (float)(row + 1) / m_p1),
-                    -0.5,
-                    oldZ * (1 - (float)(row + 1) / m_p1));
-
-            // Lower right
-            glm::vec3 point5 = glm::vec3(
-                    newX * (1 - (float)row / m_p1),
-                    -0.5,
-                    newZ * (1 - (float)row / m_p1));
-
-            // And now the tip (special case the inner triangle)
-            if (row == (m_p1 - 1)) {
-                addVertexNormal(point1, normal, &i);
-                addVertexNormal(point5, normal, &i);
-                addVertexNormal(point2, normal, &i);
-                break;
-            }
-
-            addVertexNormal(point1, normal, &i);
-            addVertexNormal(point2, normal, &i);
-            addVertexNormal(point3, normal, &i);
-            addVertexNormal(point1, normal, &i);
-            addVertexNormal(point5, normal, &i);
-            addVertexNormal(point2, normal, &i);
-        }
-
+/**
+ * @brief Given an eye, dir, and calculated data, gives back the normal
+ * Assumes computeT has already been called and the data object has a
+ * t value as well as a shape part for the intersection
+ * @param eye The eye point of the camera
+ * @param dir The direction to move in
+ * @param data An object encapsulating relevant information for computation
+ */
+void Cylinder::computeNorm(glm::vec3 eye, glm::vec3 dir, RayData *data) {
+    switch(data->part) {
+    case CYLINDER_BOTTOM_CAP:
+        Shape::rayCapIntersectNorm(-RADIUS, data);
+        break;
+    case CYLINDER_SIDE:
+        Shape::rayCircleBoundsCheckNorm(eye, dir, false, data);
+        break;
+    case CYLINDER_TOP_CAP:
+        Shape::rayCapIntersectNorm(RADIUS, data);
+        break;
+    default:
+        break;
     }
+}
 
-    // Step 2: initialize and bind a Vertex Array Object -- see glGenVertexArrays and glBindVertexArray
-    glGenVertexArrays(1, &m_vaoID);	//	Create	1	VAO
+/**
+ * @brief Computes a texture for the cylinder given rayData and a pointer to tex
+ * @param rayData An object with relevant information for texture finding
+ * @param texData The location to save the texture data
+ */
+void Cylinder::computeTexture(RayData *data, TexturePointData *texData){
+    computeCylindricalTexture(data, texData);
+}
+
+/**
+ * @brief Given new p1 and p2 values, update the geometry
+ * @param p1 A new horizontal resolution value
+ * @param p2 A new vertical resolution value
+ */
+void Cylinder::updateGeometry(int p1, int p2) {
+    m_p1 = p1;
+    m_p2 = p2;
+    boundParams();
+    cleanupGL();
+    setupGL();
+    createGeometry();
+}
+
+/**
+ * @brief Bound the parameters to something sensible
+ */
+void Cylinder::boundParams() {
+    Cone::boundParams();
+}
+
+/**
+ * @brief Actually create the triangular geometry and pass all data to GL
+ */
+void Cylinder::createGeometry() {
+    int arrayPos = 0;
+    const float st = 0.5;
+
+    // Numbers of triangles
+    m_oneRingTri = m_p2;                        // How many in first ring
+    m_restRingTri = 2*m_oneRingTri*(m_p1-1);    // Rest of rings have this many in total
+    m_numTriangles = 2*(m_oneRingTri+2)+NUM_VERTS*(2*m_restRingTri+2*m_p1*m_p2); // Count of all verts
+    m_vertexData = new GLfloat[6*m_numTriangles];
+
+    // Delta for angle
+    float theta = (2*M_PI)/(1.0*m_oneRingTri);
+
+    createCapGeometry(&arrayPos, st, theta, 1);
+    createCapGeometry(&arrayPos, -st, theta, -1);
+    createSideGeometry(&arrayPos, st, theta);
+
+    // Pass all vertices to GL and setup attrs and normals
+    passVerticesToGL(sizeof(GLfloat)*6*m_numTriangles);
+}
+
+/**
+ * @brief Create the side of the cylinder (the infinite cylinder part)
+ * @param arrayPos Current position in vertex array
+ * @param st Width of ring
+ * @param theta Delta for angle with origin
+ */
+void Cylinder::createSideGeometry(int *arrayPos, const float st, const float theta) {
+    float x1,x2,y1,y2,z1,z2,cos1,cos2,sin1,sin2;
+    /* SIDES - create sides
+     * 1. Create triangles for top level
+     * 2. Create rest of triangles
+     */
+    float segmentHeight = 1/(1.0*m_p1);         // The height of one level of the cone
+    float yNorm = 0;
+
+    // 2.
+    for (int j=0; j<m_p1; j++) {
+        y1 = st-(j*segmentHeight);
+        y2 = st-((j+1)*segmentHeight);
+        for (int i=0; i<m_oneRingTri; i++) {
+            cos1 = cos(-i*theta);
+            cos2 = cos(-(i+1)*theta);
+            sin1 = sin(-i*theta);
+            sin2 = sin(-(i+1)*theta);
+            x1 = st*cos1;
+            x2 = st*cos2;
+            z1 = st*sin1;
+            z2 = st*sin2;
+
+            // Vectors to use below
+            glm::vec3 v1 = glm::vec3(x1, y1, z1);
+            glm::vec3 v2 = glm::vec3(x2, y1, z2);
+            glm::vec3 v3 = glm::vec3(x1, y2, z1);
+            glm::vec3 v4 = glm::vec3(x2, y2, z2);
+
+            // First tri
+            storeVectors(v1, glm::normalize(glm::vec3(v1.x, yNorm, v1.z)), arrayPos);
+            storeVectors(v3, glm::normalize(glm::vec3(v3.x, yNorm, v3.z)), arrayPos);
+            storeVectors(v2, glm::normalize(glm::vec3(v2.x, yNorm, v2.z)), arrayPos);
+
+            // Second tri
+            storeVectors(v2, glm::normalize(glm::vec3(v2.x, yNorm, v2.z)), arrayPos);
+            storeVectors(v3, glm::normalize(glm::vec3(v3.x, yNorm, v3.z)), arrayPos);
+            storeVectors(v4, glm::normalize(glm::vec3(v4.x, yNorm, v4.z)), arrayPos);
+        }
+    }
+}
+
+/**
+ * @brief Simply binds and draws the triangle fan at the top and bottom plus triangles on side
+ */
+void Cylinder::renderGeometry() {
+    // For convenience, have static sizes here
+    const int pos1 = m_oneRingTri+2;
+    const int pos2 = pos1+NUM_VERTS*m_restRingTri;
+    const int pos3 = pos2+m_oneRingTri+2;
     glBindVertexArray(m_vaoID);
+    // Draw bottom
+    glDrawArrays(GL_TRIANGLE_FAN, 0, m_oneRingTri+2);
+    glDrawArrays(GL_TRIANGLES, pos1, NUM_VERTS*m_restRingTri);
 
-    // Step 3: initialize and bind a buffer for your vertex data -- see glGenBuffers and glBindBuffer
-    GLuint vboID;
-    glGenBuffers(1, &vboID);
-    glBindBuffer(GL_ARRAY_BUFFER, vboID);
-
-    // Step 4: Send your vertex data to the GPU -- see glBufferData
-    glBufferData(GL_ARRAY_BUFFER, size * sizeof(GLfloat), m_vertexBufferData, GL_STATIC_DRAW);
-
-    // Step 5: Expose the vertices to other OpenGL components (namely, shaders)
-    //         -- see glEnableVertexAttribArray and glVertexAttribPointer
-    glEnableVertexAttribArray(vertexLocation);
-    glEnableVertexAttribArray(normalLocation);
-    glVertexAttribPointer(
-        vertexLocation,
-        3,                   // Num coordinates per position
-        GL_FLOAT,            // Type
-        GL_FALSE,            // Normalized
-        sizeof(GLfloat) * 6, // Stride
-        (void*) 0            // Array buffer offset
-    );
-    glVertexAttribPointer(
-        normalLocation,
-        3,           // Num coordinates per normal
-        GL_FLOAT,    // Type
-        GL_TRUE,     // Normalized
-        sizeof(GLfloat) * 6,           // Stride
-        (void*) (sizeof(GLfloat) * 3)    // Array buffer offset
-   );
-    // Step 6: Clean up -- unbind the buffer and vertex array.
-    //         It is a good habit to leave the state of OpenGL the way you found it
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // Draw top + sides
+    glDrawArrays(GL_TRIANGLE_FAN, pos2, m_oneRingTri+2);
+    glDrawArrays(GL_TRIANGLES, pos3, NUM_VERTS*(m_restRingTri+2*m_p1*m_p2));
     glBindVertexArray(0);
-}
-
-void Cylinder::render()
-{
-    if (m_isInitialized) {
-        glBindVertexArray(m_vaoID);
-        int size = 6 * 3 * m_p2 * (6 * m_p1 - 2);
-        glDrawArrays(GL_TRIANGLES, 0, size);
-        glBindVertexArray(0);
-    }
-}
-
-void Cylinder::addVertexNormal(glm::vec3 vertex, glm::vec3 normal, int *startIndex)
-{
-    m_vertexBufferData[(*startIndex)++] = vertex.x;  //X
-    m_vertexBufferData[(*startIndex)++] = vertex.y;  //Y
-    m_vertexBufferData[(*startIndex)++] = vertex.z;  //Z
-
-    // Make sure this is a normal vector
-    normal = glm::normalize(normal);
-
-    m_vertexBufferData[(*startIndex)++] = normal.x;  //X Normal
-    m_vertexBufferData[(*startIndex)++] = normal.y;  //Y Normal
-    m_vertexBufferData[(*startIndex)++] = normal.z;  //Z Normal
 }

@@ -3,8 +3,11 @@
 
 #include "GLCommon.h"
 
-class Transforms
-{
+/**
+ * @brief Class that supports model, view, projection transforms
+ * Ability to get any of them, or the overall transform - like a struct
+ */
+class Transforms {
 public:
     Transforms();
     glm::mat4 getTransform() const;

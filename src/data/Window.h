@@ -10,8 +10,12 @@ namespace Ui {
     class MainWindow;
 }
 
-class MainWindow : public QMainWindow
-{
+/**
+ * @brief Holds a GLRenderWidget and can launch a window
+ * A class to encapsulate holding a window and loading a
+ * GLRenderWidget with the correct parameters.
+ */
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
