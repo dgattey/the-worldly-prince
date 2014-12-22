@@ -18,19 +18,18 @@ class PlanetsRenderer : public Renderer {
     // Represents the color applied to a planet along with its index in a shape list
     struct PlanetColor {
         PlanetColor() {}
-        PlanetColor(glm::vec4 l, glm::vec4 h, float t, int i) :
-            low(l), high(h), threshold(t), shapeIndex(i) {}
+        PlanetColor(glm::vec4 l, glm::vec4 h, float t) :
+            low(l), high(h), threshold(t) {}
 
         glm::vec4 low;
         glm::vec4 high;
         float threshold;
-        int shapeIndex;
     };
 
     // Represents the constant transformation for a planet
     struct PlanetData {
-        PlanetData(float s, glm::vec3 t, float d, float y, glm::vec3 p, PlanetColor col) :
-            size(s), tilt(t), day(d), year(y), place(p), c(col) {}
+        PlanetData(float s, glm::vec3 t, float d, float y, glm::vec3 p, PlanetColor col, int r) :
+            size(s), tilt(t), day(d), year(y), place(p), c(col), resolution(r) {}
 
         float size;
         glm::vec3 tilt;
@@ -38,6 +37,7 @@ class PlanetsRenderer : public Renderer {
         float year;
         glm::vec3 place;
         PlanetColor c;
+        int resolution;
     };
 
 public:
@@ -64,8 +64,9 @@ private:
     float m_seed;
 
     // Objects
-    QList<Sphere*> m_planets;
+    QList<int> m_resolutions;
     QList<PlanetData> m_planetData;
+    QHash<int, Sphere*> m_planets;
 
 };
 
