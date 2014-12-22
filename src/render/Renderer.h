@@ -29,6 +29,7 @@ protected:
     GLuint m_FBO;
     GLuint m_shader;
     GLuint m_colorAttachment;
+    int m_textureID;
 };
 
 #endif // RENDERER

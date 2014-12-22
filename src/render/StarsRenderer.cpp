@@ -1,6 +1,7 @@
 #include "StarsRenderer.h"
 #include "ResourceLoader.h"
 #include "GLRenderWidget.h"
+#include "Settings.h"
 
 #define NUMPARTICLES 4000
 #define MAXLIFE 150.0f
@@ -18,6 +19,7 @@
  * @param renderer The GLRenderWidget running everything
  */
 StarsRenderer::StarsRenderer(GLRenderWidget *renderer) {
+    m_textureID = -1;
     m_renderer = renderer;
     m_starData = new ParticleData[NUMPARTICLES];
 }
@@ -90,7 +92,8 @@ void StarsRenderer::refresh() {
  * @return An int used to add to GL_TEXTURE0 to get a unique texture
  */
 int StarsRenderer::getTextureID() {
-    return 0;
+    if (m_textureID < 0) m_textureID = settings.getAndIncrementTextureIndex();
+    return m_textureID;
 }
 
 /**

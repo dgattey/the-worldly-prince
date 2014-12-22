@@ -4,8 +4,6 @@
 #include <QObject>
 
 /**
- *
- * @struct Settings
  * @brief  Stores application settings for the GUI
  *
  * Access to all app settings is through the "settings" global variable.
@@ -13,14 +11,19 @@
  * GUI (the reverse is not true however: changing the value of a setting does
  * not update the GUI).
  */
-struct Settings {
+class Settings {
+public:
     // Loads settings from disk, or fills in default values if no saved settings exist.
     void loadSettingsOrDefaults();
 
     // Saves the current settings to disk.
     void saveSettings();
 
-    // Settings variables (currently empty)
+    // Gives the next texture
+    int getAndIncrementTextureIndex();
+
+private:
+    int textureIndex;
 };
 
 // The global Settings object, will be initialized by MainWindow

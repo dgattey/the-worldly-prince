@@ -12,17 +12,23 @@ void Settings::loadSettingsOrDefaults() {
     // Set the default values below
     QSettings s;
 
-    // Example for how to load:
-    // fillMode = s.value("fillMode", FILL_SHADED).toInt();
-    // lightingEnabled = s.value("lightingEnabled", false).toBool();
-    // shadingMode = s.value("shadingMode", SHADING_SMOOTH).toInt();
+    // Load texture index
+    textureIndex = s.value("textureIndex", 0).toInt();
 }
 
 void Settings::saveSettings() {
     QSettings s;
 
-    // Example for how to save
-    // s.setValue("fillMode", fillMode);
-    // s.setValue("lightingEnabled", lightingEnabled);
-    // s.setValue("shadingMode", shadingMode);
+    // Save texture index
+    s.setValue("textureIndex", textureIndex);
+}
+
+int Settings::getAndIncrementTextureIndex() {
+    QSettings s;
+
+    // Get and increment
+    int tex = textureIndex;
+    textureIndex++;
+    s.setValue("textureIndex", textureIndex);
+    return tex;
 }

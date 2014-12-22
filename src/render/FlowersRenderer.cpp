@@ -17,6 +17,7 @@
  * @param renderer The GLRenderWidget
  */
 FlowersRenderer::FlowersRenderer(PlanetsRenderer *planets, GLRenderWidget *renderer) {
+    m_textureID = -1;
     m_renderer = renderer;
     m_planets = planets;
 }

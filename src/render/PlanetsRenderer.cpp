@@ -3,6 +3,7 @@
 #include "Sphere.h"
 #include "GLMath.h"
 #include "GLRenderWidget.h"
+#include "Settings.h"
 
 #define VERTS_HIGH 48
 #define VERTS_LOW 36
@@ -18,6 +19,7 @@
  * @param renderer The GLRenderWidget owning this renderer
  */
 PlanetsRenderer::PlanetsRenderer(GLRenderWidget *renderer) {
+    m_textureID = -1;
     m_renderer = renderer;
     PlanetColor c;
 
@@ -108,7 +110,8 @@ void PlanetsRenderer::refresh() {
  * @return an int to add to GL_TEXTURE0 to get a unique texture
  */
 int PlanetsRenderer::getTextureID() {
-    return 1;
+    if (m_textureID < 0) m_textureID = settings.getAndIncrementTextureIndex();
+    return m_textureID;
 }
 
 /**
