@@ -48,12 +48,15 @@ HEADERS += \
     src/render/GLRenderWidget.h \
     src/shapes/Cone.h \
     src/shapes/Cube.h \
-    src/shapes/ShapeData.h
+    src/data/ShapeData.h
 
 FORMS += \
     src/data/Window.ui
 RESOURCES += \
-    resources/shaders/shaders.qrc
+    resources/shaders.qrc \
+    resources/images.qrc
+DISTFILES += \
+    resources/planetData.xml
 
 # Flags and compile options
 DEFINES += TIXML_USE_STL
