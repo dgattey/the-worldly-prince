@@ -11,29 +11,32 @@ SOURCES += \
     src/data/Settings.cpp \
     src/data/Window.cpp \
     src/render/FlowersRenderer.cpp \
+    src/render/GLRenderWidget.cpp \
     src/render/PlanetsRenderer.cpp \
     src/render/StarsRenderer.cpp \
     src/scene/Camera.cpp \
     src/scene/Particle.cpp \
+    src/scene/TexturedQuad.cpp \
     src/scene/Transforms.cpp \
+    src/shapes/Cone.cpp \
+    src/shapes/Cube.cpp \
     src/shapes/Cylinder.cpp \
     src/shapes/Flower.cpp \
     src/shapes/Shape.cpp \
     src/shapes/Sphere.cpp \
     src/main.cpp \
-    src/render/GLRenderWidget.cpp \
-    src/scene/TexturedQuad.cpp \
-    src/shapes/Cone.cpp \
-    src/shapes/Cube.cpp
+    src/data/PlanetDataParser.cpp
 
 HEADERS += \
     src/data/Bindings.h \
     src/data/ResourceLoader.h \
     src/data/Settings.h \
+    src/data/ShapeData.h \
     src/data/Window.h \
     src/lib/GLCommon.h \
     src/lib/GLMath.h \
     src/render/FlowersRenderer.h \
+    src/render/GLRenderWidget.h \
     src/render/PlanetsRenderer.h \
     src/render/Renderer.h \
     src/render/StarsRenderer.h \
@@ -41,22 +44,21 @@ HEADERS += \
     src/scene/Particle.h \
     src/scene/TexturedQuad.h \
     src/scene/Transforms.h \
+    src/shapes/Cone.h \
+    src/shapes/Cube.h \
     src/shapes/Cylinder.h \
     src/shapes/Flower.h \
     src/shapes/Shape.h \
     src/shapes/Sphere.h \
-    src/render/GLRenderWidget.h \
-    src/shapes/Cone.h \
-    src/shapes/Cube.h \
-    src/data/ShapeData.h
+    src/data/PlanetDataParser.h
 
 FORMS += \
     src/data/Window.ui
 RESOURCES += \
     resources/shaders.qrc \
-    resources/images.qrc
-DISTFILES += \
-    resources/planetData.xml
+    resources/images.qrc \
+    resources/xml.qrc
+DISTFILES +=
 
 # Flags and compile options
 DEFINES += TIXML_USE_STL

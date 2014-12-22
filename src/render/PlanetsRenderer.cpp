@@ -1,17 +1,10 @@
 #include "PlanetsRenderer.h"
 #include "ResourceLoader.h"
+#include "PlanetDataParser.h"
 #include "Sphere.h"
 #include "GLMath.h"
 #include "GLRenderWidget.h"
 #include "Settings.h"
-
-#define VERTS_HIGH 64
-#define VERTS_MED 48
-#define VERTS_LOW 36
-#define MOON 0
-#define EARTH 1
-#define MARS 2
-#define SUN 3
 
 /**
  * @brief Creates the planet data for rendering later
@@ -21,35 +14,10 @@ PlanetsRenderer::PlanetsRenderer(GLRenderWidget *renderer) {
     m_textureID = -1;
     m_renderer = renderer;
 
-    m_resolutions += VERTS_LOW;
-    m_resolutions += VERTS_MED;
-    m_resolutions += VERTS_HIGH;
-
-    PlanetColor c;
-
-    // Moon
-    c = PlanetColor(glm::vec4(),
-                    glm::vec4(0.48, 0.48, 0.5, 0.4), // high - gray
-                    -999.f);
-    m_planetData += PlanetData(1.0f, glm::vec3(1, 1, 0), 20.f, 500.f, glm::vec3(0), c, VERTS_LOW);
-
-    // Earth
-    c = PlanetColor(glm::vec4(0.2, 0.3, 0.8, 0.45), // water - blue
-                    glm::vec4(0.08, 0.55, 0.25, 0.15), // earth - green
-                    1.72);
-    m_planetData += PlanetData(4.3f, glm::vec3(0,3,1), 25.f, 75.f, glm::vec3(10, 0, 15), c, VERTS_MED);
-
-    // Mars
-    c = PlanetColor(glm::vec4(0.6, 0.25, 0.15, 0.3), // red
-                    glm::vec4(0.4, 0.2, 0.2, 0.3), // maroon
-                    1.32);
-    m_planetData += PlanetData(3.6f, glm::vec3(0,3,1), 20.f, 70.f, glm::vec3(-30, 0, 30), c, VERTS_MED);
-
-    // Sun
-    c = PlanetColor(glm::vec4(),
-                    glm::vec4(0.7, 0.5, 0, 0.8), // yellow
-                    -999.f);
-    m_planetData += PlanetData(20.f, glm::vec3(3,0,1), 40.f, 140.f, glm::vec3(-80, 0, 100), c, VERTS_MED);
+    // Parse the XML and save the data it creates
+    PlanetDataParser parser = PlanetDataParser(":/xml/planetData.xml");
+    m_resolutions = parser.getResolutions();
+    m_planetData = parser.getPlanets();
 }
 
 /**
@@ -69,10 +37,11 @@ PlanetsRenderer::~PlanetsRenderer() {
 void PlanetsRenderer::createShaderProgram() {
     m_shader = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
 
-    // Order is moon, earth/mars/sun
-    m_planets.insert(VERTS_LOW, new Sphere(m_shader, VERTS_LOW, VERTS_LOW));
-    m_planets.insert(VERTS_MED, new Sphere(m_shader, VERTS_MED, VERTS_MED));
-    m_planets.insert(VERTS_HIGH, new Sphere(m_shader, VERTS_HIGH, VERTS_HIGH));
+    // Create spheres of all possible resolutions in case needed
+    for (int i=0; i<m_resolutions.size(); i++) {
+        int res = m_resolutions.at(i);
+        m_planets.insert(res, new Sphere(m_shader, res, res));
+    }
 }
 
 /**
@@ -141,7 +110,7 @@ GLuint *PlanetsRenderer::getFBO() {
  * @return The transformation of the moon as a glm::mat4x4 at speed
  */
 glm::mat4x4 PlanetsRenderer::getMoonTransformation(float speed) {
-    return applyPlanetTrans(speed, m_planetData.at(MOON));
+    return applyPlanetTrans(speed, m_planetData.value("Moon"));
 }
 
 /**
@@ -163,8 +132,8 @@ void PlanetsRenderer::drawPlanets() {
 
     // Render all planets based off their size
     for (int i = 0; i<m_planetData.size(); i++) {
-        PlanetData data = m_planetData.at(i);
-        PlanetColor c = data.c;
+        PlanetData data = m_planetData.values().at(i);
+        PlanetColor c = data.color;
         trans.model = applyPlanetTrans(speed, data);
         glUniform4fv(colorLow, 1, &c.low[0]);
         glUniform4fv(colorHigh, 1, &c.high[0]);
@@ -185,7 +154,7 @@ void PlanetsRenderer::drawPlanets() {
  */
 glm::mat4x4 PlanetsRenderer::applyPlanetTrans(float speed, PlanetData trans) {
     return glm::rotate(speed/trans.year, glm::vec3(0,1,0)) *
-           glm::translate(trans.place) *
+           glm::translate(trans.position) *
            glm::rotate(speed/trans.day, trans.tilt) *
            glm::scale(glm::vec3(trans.size)) *
            m_renderer->getTransformation().model;

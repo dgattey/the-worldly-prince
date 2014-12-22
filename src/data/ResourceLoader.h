@@ -1,11 +1,13 @@
 #ifndef SHADER_H
 #define SHADER_H
 #include "GLCommon.h"
+#include <QXmlStreamReader>
 
 class ResourceLoader {
 public:
     ResourceLoader();
     static GLuint loadShaders(const char *vertFile, const char *fragFile);
+    static QString fileToString(const char *file);
 
 private:
     static GLuint loadShader(const char *file, int type);

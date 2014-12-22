@@ -5,6 +5,7 @@
 #include <vector>
 #include <math.h>
 #include <fstream>
+#include <QXmlStreamReader>
 
 ResourceLoader::ResourceLoader() {}
 
@@ -88,13 +89,7 @@ GLuint ResourceLoader::loadShader(const char *path, int shaderType) {
     GLuint shaderID = glCreateShader(shaderType);
 
     // Read the shader code from the file
-    std::string code;
-    QString filePath = QString(path);
-    QFile file(filePath);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        QTextStream stream(&file);
-        code = stream.readAll().toStdString();
-    }
+    std::string code = fileToString(path).toStdString();
 
     // Compile shader
     char const * ptr = code.c_str();
@@ -113,5 +108,21 @@ GLuint ResourceLoader::loadShader(const char *path, int shaderType) {
     }
 
     return shaderID;
+}
+
+/**
+ * @brief Reads the file at the filepath into a string
+ * @param path The filepath on the system
+ * @return The contents of path if successful, or an error printed and "" if not
+ */
+QString ResourceLoader::fileToString(const char *path) {
+    QString filePath = QString(path);
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        fprintf(stderr, "Couldn't open file for reading: %s", path);
+        return "";
+    }
+    QTextStream stream(&file);
+    return stream.readAll();
 }
 
