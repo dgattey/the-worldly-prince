@@ -2,20 +2,33 @@
 #include "ResourceLoader.h"
 #include <QFile>
 
+/**
+ * @brief Create an xml stream reader from the file and parse it right away
+ * @param file A filepath to parse
+ */
 PlanetDataParser::PlanetDataParser(const char * file) {
     QString fileLoaded = ResourceLoader::fileToString(file);
     QXmlStreamReader xml(fileLoaded);
     parse(xml);
 }
 
-PlanetDataParser::~PlanetDataParser() {
+/**
+ * @brief No deconstruction needed
+ */
+PlanetDataParser::~PlanetDataParser() {}
 
-}
-
+/**
+ * @brief Gives back list of all resolutions
+ * @return
+ */
 QList<int> PlanetDataParser::getResolutions() {
-    return m_resolutions.values(); // TODO: Make it return the QHash and use the QHash better?
+    return m_resolutions.values();
 }
 
+/**
+ * @brief PlanetDataParser::getPlanets
+ * @return
+ */
 QHash<QString, PlanetData> PlanetDataParser::getPlanets() {
     return m_planets;
 }

@@ -33,10 +33,16 @@ public:
 private:
     void drawPlanets();
     void randomizeSeed();
+    void parseData();
+    void createSpheres();
+    void deleteSpheres();
     glm::mat4x4 applyPlanetTrans(float speed, PlanetData trans);
 
     // For shaders
     float m_seed;
+
+    // File used for xml data
+    std::string m_file;
 
     // Objects
     QList<int> m_resolutions; // All possible resolutions

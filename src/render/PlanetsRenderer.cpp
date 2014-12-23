@@ -6,6 +6,8 @@
 #include "GLRenderWidget.h"
 #include "Settings.h"
 
+#define DATA_STATIC ":/xml/planetData.xml"
+
 /**
  * @brief Creates the planet data for rendering later
  * @param renderer The GLRenderWidget owning this renderer
@@ -13,20 +15,52 @@
 PlanetsRenderer::PlanetsRenderer(GLRenderWidget *renderer) {
     m_textureID = -1;
     m_renderer = renderer;
+    m_shader = 0;
 
-    // Parse the XML and save the data it creates
-    PlanetDataParser parser = PlanetDataParser(":/xml/planetData.xml");
-    m_resolutions = parser.getResolutions();
-    m_planetData = parser.getPlanets();
+    // Parse the XML and save the data it creates (after copying to app local data)
+    m_file = ResourceLoader::copyFileToLocalData(DATA_STATIC).toStdString();
+    parseData();
 }
 
 /**
  * @brief Deletes all planet shape data
  */
 PlanetsRenderer::~PlanetsRenderer() {
+    deleteSpheres();
+}
+
+/**
+ * @brief Assuming m_file is setup, parses all data in and creates resolutions as needed
+ */
+void PlanetsRenderer::parseData() {
+    deleteSpheres();
+
+    PlanetDataParser parser = PlanetDataParser(m_file.c_str());
+    m_resolutions = parser.getResolutions();
+    m_planetData = parser.getPlanets();
+
+    createSpheres();
+}
+
+/**
+ * @brief Adds a new sphere for every resolution in m_resolutions to map to from PlanetData
+ */
+void PlanetsRenderer::createSpheres() {
+    if (m_shader == 0) return;
+    for (int i=0; i<m_resolutions.size(); i++) {
+        int res = m_resolutions.at(i);
+        m_planets.insert(res, new Sphere(m_shader, res, res));
+    }
+}
+
+/**
+ * @brief Deletes all memory used in m_planets and clears the list
+ */
+void PlanetsRenderer::deleteSpheres() {
     for (int i=0; i<m_planets.size(); i++) {
         delete m_planets.values().at(i);
     }
+    m_planets.clear();
 }
 
 /**
@@ -36,12 +70,7 @@ PlanetsRenderer::~PlanetsRenderer() {
  */
 void PlanetsRenderer::createShaderProgram() {
     m_shader = ResourceLoader::loadShaders(":/shaders/noise.vert", ":/shaders/noise.frag");
-
-    // Create spheres of all possible resolutions in case needed
-    for (int i=0; i<m_resolutions.size(); i++) {
-        int res = m_resolutions.at(i);
-        m_planets.insert(res, new Sphere(m_shader, res, res));
-    }
+    createSpheres();
 }
 
 /**
@@ -77,6 +106,7 @@ void PlanetsRenderer::render() {
  */
 void PlanetsRenderer::refresh() {
     randomizeSeed();
+    parseData();
 }
 
 /**

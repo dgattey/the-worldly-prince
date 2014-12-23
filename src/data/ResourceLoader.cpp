@@ -1,11 +1,14 @@
 #include "ResourceLoader.h"
 #include <QFile>
 #include <QTextStream>
+#include <QXmlStreamReader>
+#include <QDir>
+#include <QStandardPaths>
+#include <QFileInfo>
 #include <iostream>
 #include <vector>
 #include <math.h>
 #include <fstream>
-#include <QXmlStreamReader>
 
 ResourceLoader::ResourceLoader() {}
 
@@ -124,5 +127,32 @@ QString ResourceLoader::fileToString(const char *path) {
     }
     QTextStream stream(&file);
     return stream.readAll();
+}
+
+/**
+ * @brief Copies file at inPath to local data storage
+ * @param inPath A path on the filesystem to a file to copy
+ * @return The new path in the local app data folder
+ */
+QString ResourceLoader::copyFileToLocalData(const char *inPath) {
+    QFile inFile(inPath);
+    QFileInfo inInfo(inFile.fileName());
+    QString filename = inInfo.fileName(); // Just the filename
+
+    // Get local data path and create the folder if it doesn't exist already
+    QString folder = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).at(0);
+    QDir::root().mkdir(folder);
+
+    // Get the new location and the file corresponding to it
+    QString outPath = folder + "/" + filename;
+    QFile outFile(outPath);
+
+    // Delete whatever file was there, copy new over, and set correct permissions
+    if (outFile.exists()) outFile.remove();
+    inFile.copy(outPath);
+    outFile.setPermissions(QFile::ReadUser | QFile::WriteUser | QFile::ReadGroup | QFile::WriteGroup | QFile::ReadOther);
+
+    // Return the new filepath as std::string
+    return outPath;
 }
 
