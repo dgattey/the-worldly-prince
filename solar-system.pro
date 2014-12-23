@@ -71,6 +71,10 @@ QMAKE_CXXFLAGS_WARN_ON += -Waddress -Warray-bounds -Wc++0x-compat -Wchar-subscri
                           -Wtrigraphs -Wuninitialized -Wunused-label -Wunused-variable \
                           -Wvolatile-register-var -Wno-extra
 
+# Nice feature of copying up the target to the main folder
+INSTALLS += target
+target.path = $$PWD
+
 # Change path to local installation as needed
 macx {
     QMAKE_CFLAGS_X86_64 += -mmacosx-version-min=10.7
@@ -79,6 +83,7 @@ macx {
     INCLUDEPATH += /usr/local/Cellar/glew/1.11.0/include
     DEPENDPATH += /usr/local/Cellar/glew/1.11.0/include
     LIBS += -L/usr/local/Cellar/glew/1.11.0/lib/ -lGLEW
+    ICON = $${PWD}/resources/icons/mac.icns
 }
 win32 {
     DEFINES += GLEW_STATIC
