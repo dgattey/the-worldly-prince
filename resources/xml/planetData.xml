@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+        <!-- Possible resolutions for planet spheres -->
+        <resolutions>
+                <high>64</high>
+                <medium>48</medium>
+                <low>36</low>
+        </resolutions>
+
+        <!-- Colors to share among planets -->
+        <colors>
+                <gray r="122" g="122" b="128" noisebase="0.4" />
+                <water r="51" g="76" b="204" noisebase="0.45" />
+                <green r="20" g="140" b="64" noisebase="0.15" />
+                <red r="153" g="64" b="39" noisebase="0.3" />
+                <maroon r="102" g="51" b="50" noisebase="0.3" />
+                <yellow r="179" g="128" b="0" noisebase="0.8" />
+        </colors>
+
+        <!-- All planets -->
+        <planets>
+                <planet name="Moon">
+                        <color>gray</color>
+                        <resolution>low</resolution>
+                        <size>1.0</size>
+                        <tilt x="1" y="1" z="0"/>
+                        <dayLength>20</dayLength>
+                        <yearLength>500</yearLength>
+                        <position x="0" y="0" z="0"/>
+                </planet>
+
+                <planet name="Earth">
+                        <color low="water" high="green" threshold="1.72"/>
+                        <resolution>high</resolution>
+                        <size>4.3</size>
+                        <tilt x="0" y="3" z="1"/>
+                        <dayLength>25</dayLength>
+                        <yearLength>75</yearLength>
+                        <position x="10" y="0" z="15"/>
+                </planet>
+
+                <planet name="Mars">
+                        <color low="red" high="maroon" threshold="1.32"/>
+                        <resolution>medium</resolution>
+                        <size>3.6</size>
+                        <tilt x="0" y="3" z="1"/>
+                        <dayLength>20</dayLength>
+                        <yearLength>70</yearLength>
+                        <position x="-30" y="0" z="30"/>
+                </planet>
+
+                <planet name="Sun">
+                        <color>yellow</color>
+                        <resolution>medium</resolution>
+                        <size>50</size>
+                        <tilt x="3" y="0" z="1"/>
+                        <dayLength>40</dayLength>
+                        <yearLength>140</yearLength>
+                        <position x="-80" y="0" z="100"/>
+                </planet>
+        </planets>
+</data>
